@@ -1,0 +1,1 @@
+let e=require("electron");e.contextBridge.exposeInMainWorld(`electronAPI`,{saveCapture:(t,n)=>e.ipcRenderer.invoke(`save-capture`,t,n)});

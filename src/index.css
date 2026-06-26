@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Custom global rules or overrides */
+body {
+  margin: 0;
+  background-color: #111215;
+  color: #f3f4f6;
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  overflow: hidden; /* Avoid default scrollbars in a desktop tool */
+  user-select: none; /* Desktop app feel */
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

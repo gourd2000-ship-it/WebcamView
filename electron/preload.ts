@@ -3,4 +3,14 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('electronAPI', {
   saveCapture: (arrayBuffer: ArrayBuffer, fileName: string) => 
     ipcRenderer.invoke('save-capture', arrayBuffer, fileName),
+  isFullscreen: () => ipcRenderer.invoke('is-fullscreen'),
+  toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen'),
+  exitFullscreen: () => ipcRenderer.send('exit-fullscreen'),
+  onFullscreenChange: (callback: (val: boolean) => void) => {
+    const listener = (_: any, val: boolean) => callback(val)
+    ipcRenderer.on('fullscreen-change', listener)
+    return () => {
+      ipcRenderer.removeListener('fullscreen-change', listener)
+    }
+  }
 })

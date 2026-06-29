@@ -4,6 +4,10 @@ export interface ElectronAPI {
     filePath?: string
     error?: string
   }>
+  isFullscreen: () => Promise<boolean>
+  toggleFullscreen: () => void
+  exitFullscreen: () => void
+  onFullscreenChange: (callback: (val: boolean) => void) => () => void
 }
 
 declare global {

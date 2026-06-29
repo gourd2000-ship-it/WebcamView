@@ -14,6 +14,7 @@ function createWindow() {
     height: 768,
     minWidth: 800,
     minHeight: 600,
+    fullscreen: true, // Default to OS Fullscreen on startup!
     webPreferences: {
       // Compiled files are placed in dist-electron/ as ESM (.mjs)
       preload: path.join(__dirname, 'preload.mjs'),
@@ -31,6 +32,15 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
+
+  // OS-level Fullscreen Event Listeners to keep React in sync
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow?.webContents.send('fullscreen-change', true)
+  })
+
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow?.webContents.send('fullscreen-change', false)
+  })
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -71,5 +81,23 @@ ipcMain.handle('save-capture', async (event, arrayBuffer: ArrayBuffer, fileName:
   } catch (error: any) {
     console.error('Failed to save capture:', error)
     return { success: false, error: error.message }
+  }
+})
+
+// IPC channels for Fullscreen management
+ipcMain.handle('is-fullscreen', () => {
+  return mainWindow?.isFullScreen() || false
+})
+
+ipcMain.on('toggle-fullscreen', () => {
+  if (mainWindow) {
+    const next = !mainWindow.isFullScreen()
+    mainWindow.setFullScreen(next)
+  }
+})
+
+ipcMain.on('exit-fullscreen', () => {
+  if (mainWindow && mainWindow.isFullScreen()) {
+    mainWindow.setFullScreen(false)
   }
 })

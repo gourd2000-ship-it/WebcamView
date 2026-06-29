@@ -9,24 +9,45 @@ export interface UseFullscreenResult {
 export function useFullscreen(): UseFullscreenResult {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
 
-  // Sync state on HTML5 fullscreen change events
+  // Sync state with HTML5 / Electron fullscreen change events
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
+    if (window.electronAPI) {
+      // Fetch initial fullscreen state (starts as true in Electron BrowserWindow)
+      window.electronAPI.isFullscreen().then((val) => {
+        setIsFullscreen(val)
+      })
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      // Listen to Electron window fullscreen changes
+      const unsubscribe = window.electronAPI.onFullscreenChange((val) => {
+        setIsFullscreen(val)
+      })
+
+      return () => {
+        unsubscribe()
+      }
+    } else {
+      // Fallback for browser-only testing environments
+      const handleFullscreenChange = () => {
+        setIsFullscreen(!!document.fullscreenElement)
+      }
+
+      document.addEventListener('fullscreenchange', handleFullscreenChange)
+      return () => {
+        document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      }
     }
   }, [])
 
   const toggleFullscreen = useCallback(async () => {
     try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen()
+      if (window.electronAPI) {
+        window.electronAPI.toggleFullscreen()
       } else {
-        await document.exitFullscreen()
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen()
+        } else {
+          await document.exitFullscreen()
+        }
       }
     } catch (err) {
       console.error('Failed to toggle fullscreen mode:', err)
@@ -35,8 +56,12 @@ export function useFullscreen(): UseFullscreenResult {
 
   const exitFullscreen = useCallback(async () => {
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
+      if (window.electronAPI) {
+        window.electronAPI.exitFullscreen()
+      } else {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen()
+        }
       }
     } catch (err) {
       console.error('Failed to exit fullscreen mode:', err)

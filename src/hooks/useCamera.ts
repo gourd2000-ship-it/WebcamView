@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { stopStream } from '../utils/stream'
+import { createVirtualCameraStream } from '../utils/virtualCamera'
 
 export interface UseCameraResult {
   devices: MediaDeviceInfo[]
@@ -40,11 +41,21 @@ export function useCamera(): UseCameraResult {
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices()
       const videoDevices = allDevices.filter((d) => d.kind === 'videoinput')
-      setDevices(videoDevices)
+      
+      const virtualDevice: MediaDeviceInfo = {
+        deviceId: 'virtual-camera',
+        groupId: 'virtual',
+        kind: 'videoinput',
+        label: '가상 카메라 (시뮬레이터) 🧪',
+        toJSON: () => ({})
+      }
+
+      const combinedDevices = [...videoDevices, virtualDevice]
+      setDevices(combinedDevices)
       
       // Auto-select first device if none is selected
-      if (videoDevices.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(videoDevices[0].deviceId)
+      if (combinedDevices.length > 0 && !selectedDeviceId) {
+        setSelectedDeviceId(combinedDevices[0].deviceId)
       }
     } catch (err) {
       console.error('Failed to enumerate devices:', err)
@@ -107,16 +118,21 @@ export function useCamera(): UseCameraResult {
       }
 
       try {
-        const constraints: MediaStreamConstraints = {
-          video: {
-            deviceId: { exact: selectedDeviceId },
-            // ideal resolution for document reading
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-        }
+        let newStream: MediaStream
 
-        const newStream = await navigator.mediaDevices.getUserMedia(constraints)
+        if (selectedDeviceId === 'virtual-camera') {
+          newStream = createVirtualCameraStream()
+        } else {
+          const constraints: MediaStreamConstraints = {
+            video: {
+              deviceId: { exact: selectedDeviceId },
+              // ideal resolution for document reading
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+          }
+          newStream = await navigator.mediaDevices.getUserMedia(constraints)
+        }
         
         if (active) {
           activeStreamRef.current = newStream

@@ -2,13 +2,17 @@
   "name": "webcamviewer",
   "private": true,
   "version": "0.0.0",
+  "description": "Windows용 로컬 실물화상기 데스크톱 앱",
+  "author": "Antigravity",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "package": "tsc -b && vite build && electron-builder",
+    "package:dir": "tsc -b && vite build && electron-builder --dir"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -32,5 +36,29 @@
     "typescript": "~6.0.2",
     "vite": "^8.1.0",
     "vite-plugin-electron": "^1.1.0"
+  },
+  "build": {
+    "appId": "com.webcamviewer.app",
+    "productName": "WebcamViewer",
+    "directories": {
+      "output": "dist-packaged"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "asar": true
   }
 }

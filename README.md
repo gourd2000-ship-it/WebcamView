@@ -1,32 +1,94 @@
-# React + TypeScript + Vite
+# WebcamViewer (로컬 실물화상기 데스크톱 앱)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+WebcamViewer는 교실 환경에서 USB 웹캠이나 노트북 내장 카메라를 활용해 학생 공책, 교과서, 활동 결과물 등을 크게 비추고 제어할 수 있는 **Windows용 로컬 데스크톱 애플리케이션**입니다.
 
-Currently, two official plugins are available:
+보안과 사용성에 집중하여, **100% 오프라인**으로 작동하며 웹캠 영상을 외부 서버로 일절 전송하지 않는 안전한 격리 환경을 보장합니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 1. 주요 기능 (Features)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **카메라 디바이스 관리**: 연결된 카메라 목록을 감지하고 드롭다운을 통해 즉시 전환할 수 있습니다. 장치 전환 및 종료 시 이전 스트림 트랙을 완벽하게 소멸(stop) 처리하여 카메라 잠금이나 리소스 누수를 방지합니다.
+*   **실시간 화면 조작**: 좌우반전, 90도 회전, 확대/축소(100% ~ 500%), 전체 조작 상태 초기화 기능을 제공합니다.
+*   **화면 정지 (Freeze)**: 비디오 프레임을 캡처하여 동결화면으로 표시합니다. 화면이 정지된 상태에서도 확대, 회전, 반전 등의 화면 조작이 가능합니다.
+*   **캡처 저장**: 회전, 반전, 확대 배율 및 정지화면 상태가 그대로 적용된 고해상도 PNG 이미지를 원클릭으로 로컬 사진 디렉터리에 저장합니다.
+*   **전역 키보드 단축키**: 전체화면이나 포커스가 풀린 상태에서도 모든 주요 기능을 단축키로 제어할 수 있습니다.
+*   **교실 최적화 UI**: 전자칠판 및 프로젝터 환경에서 손쉽게 터치하여 조작할 수 있도록 48px 이상의 대형 툴바 버튼과 슬라이드형 커스텀 토스트 알림을 지원합니다.
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## 2. 키보드 단축키 (Keyboard Shortcuts)
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+앱 실행 중 언제든지 아래 단축키를 눌러 빠르게 제어할 수 있습니다.
+
+| 단축키 | 기능 설명 |
+| :--- | :--- |
+| **`Space`** | 화면 일시정지 (Freeze) / 실시간 영상 복구 토글 |
+| **`F`** | 전체화면 전환 (진입 / 종료) |
+| **`M`** | 좌우반전 토글 (Mirror) |
+| **`R`** | 90도 시계방향 회전 (Rotate) |
+| **`+`** (또는 `=`) | 화면 확대 (Zoom In, 최대 500%) |
+| **`-`** | 화면 축소 (Zoom Out, 최소 100%) |
+| **`0`** | 화면 배율, 회전, 좌우반전 전체 초기화 (Reset) |
+| **`C`** | 현재 화면 캡처 저장 (Capture, PNG 파일로 저장) |
+| **`Esc`** | 전체화면 종료 |
+
+*※ 텍스트 입력창이 선택되었을 때는 오작동을 막기 위해 단축키 작동이 자동으로 제한됩니다.*
+
+---
+
+## 3. 기술 스택 (Tech Stack)
+
+*   **데스크톱 쉘**: Electron (v42+)
+*   **렌더러 프레임워크**: React (v19), TypeScript
+*   **빌드 도구**: Vite (v8) + `vite-plugin-electron`
+*   **스타일링**: TailwindCSS (v4)
+*   **패키징**: `electron-builder`
+
+---
+
+## 4. 개발 및 빌드 명령어 (Commands)
+
+### 의존성 설치
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 개발 서버 실행 (Vite HMR + Electron)
+```bash
+npm run dev
+```
+
+### 코드 정적 분석 및 린트 검사 (Oxlint)
+```bash
+npm run lint
+```
+
+### 빌드 테스트 (TS 컴파일 + 번들링)
+```bash
+npm run build
+```
+
+### Windows 설치형 `.exe` 패키징 빌드
+```bash
+npm run package
+```
+*빌드가 완료되면 루트 폴더의 `dist-packaged/` 폴더 내에 설치용 `.exe` 파일과 무설치 단일 포터블 실행 파일(`WebcamViewer.exe`)이 생성됩니다.*
+
+### 무설치 파일 디렉토리 빌드 (빠른 패키징 테스트)
+```bash
+npm run package:dir
+```
+
+---
+
+## 5. 테스트 체크리스트 (Verification Checklist)
+
+배포 또는 실행 시 다음 체크리스트를 통해 상태를 점검합니다.
+
+1.  [ ] **카메라 활성화**: 앱 실행 후 상단 드롭다운에서 장치를 골랐을 때 실시간 영상이 중앙에 레터박스를 유지하며 정상 출력되는지 여부
+2.  [ ] **메모리 및 장치 누수 차단**: 장치를 변경하거나 '카메라 끄기' 클릭 시 실제 웹캠 하드웨어 표시등(LED)이 즉각 차단되는지 여부
+3.  [ ] **CSS 화면 조작**: 툴바 및 단축키(`R`, `M`, `+`, `-`, `0`)로 화면이 찢어짐 없이 90도 회전, 반전, 배율 변동되는지 여부
+4.  [ ] **스냅샷 캡처 및 IPC 저장**: `C`를 눌렀을 때, 사용자 사진 라이브러리(`C:\Users\<사용자명>\Pictures\WebcamViewer\`) 폴더에 회전/반전/줌 비율이 깨짐 없이 투영된 고해상도 PNG 파일(파일명: `webcam-capture-YYYY-MM-DD-HHMMSS.png`)이 정상 저장되는지 여부
+5.  [ ] **전체화면 상태**: `F`를 눌러 전체화면 진입 후 `Esc` 입력 시 윈도우 레이아웃이 깨짐 없이 복구되며 단축키 리스너가 유기적으로 작동하는지 여부
+6.  [ ] **에러 복구**: 카메라가 연결되지 않았거나 다른 앱이 점유 중일 때, 튕기지 않고 화면 중앙에 예외 문구 카드가 나타나는지 여부

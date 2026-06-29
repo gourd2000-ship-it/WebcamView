@@ -6,7 +6,8 @@ export function drawTransformedCanvas(
   source: HTMLVideoElement | HTMLImageElement,
   zoom: number,
   rotation: number,
-  isFlipped: boolean
+  isFlipped: boolean,
+  annotationCanvas: HTMLCanvasElement | null = null
 ): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -63,6 +64,17 @@ export function drawTransformedCanvas(
     srcWidth,
     srcHeight
   )
+
+  // 6. Draw annotations centered on top
+  if (annotationCanvas) {
+    ctx.drawImage(
+      annotationCanvas,
+      -srcWidth / 2,
+      -srcHeight / 2,
+      srcWidth,
+      srcHeight
+    )
+  }
 
   return canvas
 }

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { StatusBar } from './components/StatusBar'
 import { CameraViewer } from './components/CameraViewer'
 import { Toolbar } from './components/Toolbar'
+import { AnnotationToolbar } from './components/AnnotationToolbar'
+import type { AnnotationTool } from './components/AnnotationToolbar'
 import { useCamera } from './hooks/useCamera'
 import { useViewerTransform } from './hooks/useViewerTransform'
 import { useFullscreen } from './hooks/useFullscreen'
@@ -61,15 +63,21 @@ function App() {
   // Fullscreen controls visibility
   const [showControls, setShowControls] = useState<boolean>(true)
 
+  // Annotation drawing board states
+  const [activeTool, setActiveTool] = useState<AnnotationTool>('select')
+  const [brushColor, setBrushColor] = useState<string>('#ef4444')
+  const [brushSize, setBrushSize] = useState<number>(6)
+  const [paths, setPaths] = useState<any[]>([])
+
+  const annotationCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const viewerRef = useRef<HTMLVideoElement | HTMLImageElement | null>(null)
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
     setTimeout(() => {
       setToast(null)
     }, 4000)
   }
-
-  // viewerRef points to active video or image element
-  const viewerRef = useRef<HTMLVideoElement | HTMLImageElement | null>(null)
 
   // Handlers
   const handleSelectDevice = (id: string) => {
@@ -116,14 +124,17 @@ function App() {
     }
   }
 
-  // Real capture and save handler
+  // Real capture and save handler (incorporating annotations)
   const handleCapture = async () => {
     if (!viewerRef.current || !isCameraActive) return
 
-    // In canvas rendering, we pass panX and panY to preserve the current pan crop
-    // But since the customer request did not specify if crop should be saved,
-    // let's pass the transforms to capture as usual.
-    const result = await capture(viewerRef.current, zoom, rotation, isFlipped)
+    const result = await capture(
+      viewerRef.current,
+      zoom,
+      rotation,
+      isFlipped,
+      annotationCanvasRef.current
+    )
     
     if (result.success) {
       const fileName = result.filePath?.split(/\/|\\/).pop() || 'image.png'
@@ -131,6 +142,15 @@ function App() {
     } else {
       showToast(`저장 실패: ${result.error}`, 'error')
     }
+  }
+
+  // Undo / Clear All actions for Annotation
+  const handleUndo = () => {
+    setPaths((prev) => prev.slice(0, prev.length - 1))
+  }
+
+  const handleClearAll = () => {
+    setPaths([])
   }
 
   // Global Keyboard Shortcuts Binding
@@ -141,7 +161,10 @@ function App() {
     onRotate: rotate,
     onZoomIn: zoomIn,
     onZoomOut: zoomOut,
-    onReset: resetTransform,
+    onReset: () => {
+      resetTransform()
+      setActiveTool('select')
+    },
     onCapture: handleCapture,
     onExitFullscreen: exitFullscreen,
     isCameraActive,
@@ -173,6 +196,12 @@ function App() {
       if (timeoutId) clearTimeout(timeoutId)
     }
   }, [isFullscreen])
+
+  // Clear drawing board when camera device or activity changes
+  useEffect(() => {
+    setPaths([])
+    setActiveTool('select')
+  }, [selectedDeviceId, isCameraActive])
 
   return (
     <div className="flex-1 flex flex-col justify-between h-full bg-[#111215] text-[#f3f4f6] relative overflow-hidden">
@@ -216,6 +245,27 @@ function App() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        
+        activeTool={activeTool}
+        brushColor={brushColor}
+        brushSize={brushSize}
+        paths={paths}
+        setPaths={setPaths}
+        annotationCanvasRef={annotationCanvasRef}
+      />
+
+      {/* Floating Annotation Drawing Toolbar */}
+      <AnnotationToolbar
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        color={brushColor}
+        setColor={setBrushColor}
+        thickness={brushSize}
+        setThickness={setBrushSize}
+        onUndo={handleUndo}
+        onClearAll={handleClearAll}
+        isCameraActive={isCameraActive}
+        isVisible={showControls}
       />
 
       {/* Bottom control bar Wrapper */}
@@ -232,7 +282,10 @@ function App() {
           zoom={zoom}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onZoomReset={resetTransform}
+          onZoomReset={() => {
+            resetTransform()
+            setActiveTool('select')
+          }}
           onRotate={rotate}
           isFlipped={isFlipped}
           onToggleFlip={toggleFlip}

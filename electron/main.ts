@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, screen } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
@@ -9,7 +9,15 @@ const __dirname = path.dirname(__filename)
 let mainWindow: BrowserWindow | null = null
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const displays = screen.getAllDisplays()
+  const primaryDisplay = screen.getPrimaryDisplay()
+
+  // 메인 디스플레이가 아닌 보조 디스플레이 탐색
+  const externalDisplay = displays.find((display) => {
+    return display.id !== primaryDisplay.id
+  })
+
+  const windowOptions: any = {
     width: 1024,
     height: 768,
     minWidth: 800,
@@ -23,7 +31,15 @@ function createWindow() {
       sandbox: true,
     },
     autoHideMenuBar: true,
-  })
+  }
+
+  // 보조 디스플레이가 감지되면 해당 모니터 영역으로 창 좌표 이동
+  if (externalDisplay) {
+    windowOptions.x = externalDisplay.bounds.x
+    windowOptions.y = externalDisplay.bounds.y
+  }
+
+  mainWindow = new BrowserWindow(windowOptions)
 
   // In development, load the Vite dev server URL.
   // In production, load the built index.html.

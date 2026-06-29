@@ -2,7 +2,7 @@ import React from 'react'
 import { EmptyState } from './EmptyState'
 
 interface CameraViewerProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>
+  viewerRef: React.RefObject<HTMLVideoElement | HTMLImageElement | null>
   stream: MediaStream | null
   isCameraActive: boolean
   isFrozen: boolean
@@ -15,7 +15,7 @@ interface CameraViewerProps {
 }
 
 export const CameraViewer: React.FC<CameraViewerProps> = ({
-  videoRef,
+  viewerRef,
   stream,
   isCameraActive,
   isFrozen,
@@ -28,14 +28,14 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
 }) => {
   // Bind MediaStream to video element srcObject
   React.useEffect(() => {
-    if (videoRef.current) {
+    if (viewerRef.current && viewerRef.current instanceof HTMLVideoElement) {
       if (stream && !isFrozen) {
-        videoRef.current.srcObject = stream
+        viewerRef.current.srcObject = stream
       } else {
-        videoRef.current.srcObject = null
+        viewerRef.current.srcObject = null
       }
     }
-  }, [videoRef, stream, isFrozen, isCameraActive])
+  }, [viewerRef, stream, isFrozen, isCameraActive])
 
   // Compute transform style string
   // Order of transform is crucial: Mirror first, then rotate, then zoom
@@ -53,6 +53,7 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
           <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-[#08090b] border border-[#2e3039]">
             {isFrozen && frozenDataUrl ? (
               <img
+                ref={viewerRef as React.RefObject<HTMLImageElement | null>}
                 src={frozenDataUrl}
                 alt="Frozen frame"
                 style={transformStyle}
@@ -60,7 +61,7 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
               />
             ) : (
               <video
-                ref={videoRef}
+                ref={viewerRef as React.RefObject<HTMLVideoElement | null>}
                 autoPlay
                 playsInline
                 muted

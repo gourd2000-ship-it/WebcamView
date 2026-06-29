@@ -6,6 +6,7 @@ import { useCamera } from './hooks/useCamera'
 import { useViewerTransform } from './hooks/useViewerTransform'
 import { useFullscreen } from './hooks/useFullscreen'
 import { useCapture } from './hooks/useCapture'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 function App() {
@@ -41,12 +42,13 @@ function App() {
   const {
     isFullscreen,
     toggleFullscreen,
+    exitFullscreen,
   } = useFullscreen()
 
   // Capture Hook
   const { isCapturing, capture } = useCapture()
 
-  // Custom Toast state for premium notification feel
+  // Custom Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -86,7 +88,6 @@ function App() {
           const video = viewerRef.current
           const canvas = document.createElement('canvas')
           
-          // Capture raw video frame dimensions
           canvas.width = video.videoWidth || 640
           canvas.height = video.videoHeight || 480
           const ctx = canvas.getContext('2d')
@@ -118,6 +119,20 @@ function App() {
       showToast(`저장 실패: ${result.error}`, 'error')
     }
   }
+
+  // Global Keyboard Shortcuts Binding
+  useKeyboardShortcuts({
+    onToggleFreeze: handleToggleFreeze,
+    onToggleFullscreen: toggleFullscreen,
+    onToggleFlip: toggleFlip,
+    onRotate: rotate,
+    onZoomIn: zoomIn,
+    onZoomOut: zoomOut,
+    onReset: resetTransform,
+    onCapture: handleCapture,
+    onExitFullscreen: exitFullscreen,
+    isCameraActive,
+  })
 
   return (
     <div className="flex-1 flex flex-col justify-between h-full bg-[#111215] text-[#f3f4f6] relative">

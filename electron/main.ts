@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
@@ -52,6 +52,22 @@ function createWindow() {
   // 시작 시 확실하게 전체화면이 적용되도록 명시적 호출 추가
   mainWindow.setFullScreen(true)
 
+  // 1순위 보안 조치: 렌더러 내부에서 신뢰하지 않는 외부 페이지로의 강제 이동 차단
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const parsedUrl = new URL(url)
+    if (parsedUrl.origin !== process.env.VITE_DEV_SERVER_URL && parsedUrl.protocol !== 'file:') {
+      event.preventDefault()
+    }
+  })
+
+  // 1순위 보안 조치: 외부 웹 링크 클릭 시 일렉트론 내부가 아닌 시스템 기본 웹 브라우저로 오픈
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http:') || url.startsWith('https:')) {
+      shell.openExternal(url)
+    }
+    return { action: 'deny' }
+  })
+
   // OS-level Fullscreen Event Listeners to keep React in sync
   mainWindow.on('enter-full-screen', () => {
     mainWindow?.webContents.send('fullscreen-change', true)
@@ -85,6 +101,21 @@ app.on('window-all-closed', () => {
 // IPC channel for saving captured PNG
 ipcMain.handle('save-capture', async (event, arrayBuffer: ArrayBuffer, fileName: string) => {
   try {
+    // 2순위 보안 조치: DoS 방지를 위한 최대 업로드 파일 크기 제한 (15MB)
+    const MAX_CAPTURE_SIZE = 15 * 1024 * 1024
+    if (arrayBuffer.byteLength > MAX_CAPTURE_SIZE) {
+      return { success: false, error: '허용된 이미지 용량(15MB)을 초과했습니다.' }
+    }
+
+    // 2순위 보안 조치: 임의 파일 저장 및 조작 방지를 위해 PNG 이미지 포맷 유효성 검사 (Magic Bytes 체크)
+    if (arrayBuffer.byteLength < 4) {
+      return { success: false, error: '유효하지 않은 파일 데이터입니다.' }
+    }
+    const headerView = new Uint8Array(arrayBuffer.slice(0, 4))
+    if (headerView[0] !== 0x89 || headerView[1] !== 0x50 || headerView[2] !== 0x4E || headerView[3] !== 0x47) {
+      return { success: false, error: '올바르지 않은 이미지 포맷입니다. (PNG 파일만 허용)' }
+    }
+
     const picturesPath = app.getPath('pictures')
     const saveDir = path.join(picturesPath, 'WebcamViewer')
     

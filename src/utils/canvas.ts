@@ -1,13 +1,15 @@
 /**
  * Draws a video frame or image source onto a canvas with correct transformations
- * (zoom, rotation, flip) applied, matching the viewer state.
+ * (zoom, rotation, flip) and image filters (brightness, contrast, invert, grayscale) applied,
+ * matching the viewer state.
  */
 export function drawTransformedCanvas(
   source: HTMLVideoElement | HTMLImageElement,
   zoom: number,
   rotation: number,
   isFlipped: boolean,
-  annotationCanvas: HTMLCanvasElement | null = null
+  annotationCanvas: HTMLCanvasElement | null = null,
+  filters = { brightness: 100, contrast: 100, isInverted: false, isGrayscale: false }
 ): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -56,7 +58,10 @@ export function drawTransformedCanvas(
   // 4. Apply zoom scale
   ctx.scale(zoom, zoom)
 
-  // 5. Draw image centered
+  // 5. Set image adjustment filters on context
+  ctx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) invert(${filters.isInverted ? 100 : 0}%) grayscale(${filters.isGrayscale ? 100 : 0}%)`
+
+  // 6. Draw image centered
   ctx.drawImage(
     source,
     -srcWidth / 2,
@@ -65,7 +70,10 @@ export function drawTransformedCanvas(
     srcHeight
   )
 
-  // 6. Draw annotations centered on top
+  // 7. Reset filter for annotations so they are not affected by filters
+  ctx.filter = 'none'
+
+  // 8. Draw annotations centered on top
   if (annotationCanvas) {
     ctx.drawImage(
       annotationCanvas,

@@ -9,7 +9,8 @@ export interface UseCaptureResult {
     zoom: number,
     rotation: number,
     isFlipped: boolean,
-    annotationCanvas?: HTMLCanvasElement | null
+    annotationCanvas?: HTMLCanvasElement | null,
+    filters?: { brightness: number; contrast: number; isInverted: boolean; isGrayscale: boolean }
   ) => Promise<{ success: boolean; filePath?: string; error?: string }>
 }
 
@@ -22,7 +23,8 @@ export function useCapture(): UseCaptureResult {
       zoom: number,
       rotation: number,
       isFlipped: boolean,
-      annotationCanvas: HTMLCanvasElement | null = null
+      annotationCanvas: HTMLCanvasElement | null = null,
+      filters = { brightness: 100, contrast: 100, isInverted: false, isGrayscale: false }
     ) => {
       if (!source) {
         return { success: false, error: '카메라 영상 소스가 없습니다.' }
@@ -30,8 +32,8 @@ export function useCapture(): UseCaptureResult {
 
       setIsCapturing(true)
       try {
-        // Draw the transformed frame onto canvas with annotations
-        const canvas = drawTransformedCanvas(source, zoom, rotation, isFlipped, annotationCanvas)
+        // Draw the transformed frame onto canvas with annotations and filters
+        const canvas = drawTransformedCanvas(source, zoom, rotation, isFlipped, annotationCanvas, filters)
         
         // Convert canvas to Blob
         const blob = await new Promise<Blob | null>((resolve) => {

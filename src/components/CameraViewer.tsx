@@ -30,6 +30,12 @@ interface CameraViewerProps {
   paths: DrawingPath[]
   setPaths: React.Dispatch<React.SetStateAction<DrawingPath[]>>
   annotationCanvasRef: React.RefObject<HTMLCanvasElement | null>
+
+  // Image Adjustment Filters Props
+  brightness: number
+  contrast: number
+  isInverted: boolean
+  isGrayscale: boolean
 }
 
 export const CameraViewer: React.FC<CameraViewerProps> = ({
@@ -57,6 +63,11 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
   paths,
   setPaths,
   annotationCanvasRef,
+
+  brightness,
+  contrast,
+  isInverted,
+  isGrayscale,
 }) => {
   const [canvasWidth, setCanvasWidth] = React.useState(1920)
   const [canvasHeight, setCanvasHeight] = React.useState(1080)
@@ -108,6 +119,12 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
     transformOrigin: 'center center',
   }
 
+  // Compute media filter style string (applied ONLY to video/image)
+  const mediaStyle = {
+    ...transformStyle,
+    filter: `brightness(${brightness}%) contrast(${contrast}%) invert(${isInverted ? 100 : 0}%) grayscale(${isGrayscale ? 100 : 0}%)`,
+  }
+
   // Disable transitions while dragging for instant responsive feedback
   const transitionClass = isDragging ? 'transition-none' : 'transition-transform duration-200 ease-out'
   
@@ -139,7 +156,7 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
                 ref={viewerRef as React.RefObject<HTMLImageElement | null>}
                 src={frozenDataUrl}
                 alt="Frozen frame"
-                style={transformStyle}
+                style={mediaStyle}
                 className={cn(
                   "pointer-events-none",
                   isFullscreen ? "w-full h-full object-cover" : "max-w-full max-h-full object-contain",
@@ -152,7 +169,7 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
                 autoPlay
                 playsInline
                 muted
-                style={transformStyle}
+                style={mediaStyle}
                 className={cn(
                   "pointer-events-none",
                   isFullscreen ? "w-full h-full object-cover" : "max-w-full max-h-full object-contain",
@@ -161,7 +178,7 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
               />
             )}
 
-            {/* Annotation Canvas Overlay Layer (Same exact size and transform) */}
+            {/* Annotation Canvas Overlay Layer (Excludes filters) */}
             <AnnotationCanvas
               canvasRef={annotationCanvasRef}
               width={canvasWidth}

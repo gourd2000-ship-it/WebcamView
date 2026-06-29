@@ -10,7 +10,7 @@ import { useFullscreen } from './hooks/useFullscreen'
 import { useCapture } from './hooks/useCapture'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { cn } from './utils/cn'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react'
 
 function App() {
   const {
@@ -69,6 +69,13 @@ function App() {
   const [brushSize, setBrushSize] = useState<number>(6)
   const [paths, setPaths] = useState<any[]>([])
 
+  // Image Adjustment Filter States
+  const [brightness, setBrightness] = useState<number>(100)
+  const [contrast, setContrast] = useState<number>(100)
+  const [isInverted, setIsInverted] = useState<boolean>(false)
+  const [isGrayscale, setIsGrayscale] = useState<boolean>(false)
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState<boolean>(false)
+
   const annotationCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const viewerRef = useRef<HTMLVideoElement | HTMLImageElement | null>(null)
 
@@ -124,7 +131,7 @@ function App() {
     }
   }
 
-  // Real capture and save handler (incorporating annotations)
+  // Real capture and save handler (incorporating annotations and image filters)
   const handleCapture = async () => {
     if (!viewerRef.current || !isCameraActive) return
 
@@ -133,7 +140,8 @@ function App() {
       zoom,
       rotation,
       isFlipped,
-      annotationCanvasRef.current
+      annotationCanvasRef.current,
+      { brightness, contrast, isInverted, isGrayscale }
     )
     
     if (result.success) {
@@ -153,6 +161,16 @@ function App() {
     setPaths([])
   }
 
+  // Reset all transforms, annotations, and filters
+  const handleResetEverything = () => {
+    resetTransform()
+    setActiveTool('select')
+    setBrightness(100)
+    setContrast(100)
+    setIsInverted(false)
+    setIsGrayscale(false)
+  }
+
   // Global Keyboard Shortcuts Binding
   useKeyboardShortcuts({
     onToggleFreeze: handleToggleFreeze,
@@ -161,10 +179,7 @@ function App() {
     onRotate: rotate,
     onZoomIn: zoomIn,
     onZoomOut: zoomOut,
-    onReset: () => {
-      resetTransform()
-      setActiveTool('select')
-    },
+    onReset: handleResetEverything,
     onCapture: handleCapture,
     onExitFullscreen: exitFullscreen,
     isCameraActive,
@@ -197,10 +212,15 @@ function App() {
     }
   }, [isFullscreen])
 
-  // Clear drawing board when camera device or activity changes
+  // Clear drawing board and close filters when camera device or activity changes
   useEffect(() => {
     setPaths([])
     setActiveTool('select')
+    setIsFilterPanelOpen(false)
+    setBrightness(100)
+    setContrast(100)
+    setIsInverted(false)
+    setIsGrayscale(false)
   }, [selectedDeviceId, isCameraActive])
 
   return (
@@ -252,6 +272,11 @@ function App() {
         paths={paths}
         setPaths={setPaths}
         annotationCanvasRef={annotationCanvasRef}
+
+        brightness={brightness}
+        contrast={contrast}
+        isInverted={isInverted}
+        isGrayscale={isGrayscale}
       />
 
       {/* Floating Annotation Drawing Toolbar */}
@@ -268,6 +293,90 @@ function App() {
         isVisible={showControls}
       />
 
+      {/* Image Adjustments Floating Slider Panel */}
+      {isFilterPanelOpen && isCameraActive && (
+        <div
+          className={cn(
+            "absolute bottom-24 left-1/2 -translate-x-1/2 z-40 w-80 p-5 rounded-2xl bg-[#1a1c22]/95 border border-[#2e3039] shadow-2xl backdrop-blur-md transition-opacity duration-300 flex flex-col space-y-4",
+            isFullscreen && (showControls ? "opacity-100" : "opacity-0 pointer-events-none duration-500")
+          )}
+        >
+          <div className="flex items-center justify-between border-b border-[#2e3039] pb-2">
+            <h4 className="text-xs font-bold text-gray-300 tracking-wider uppercase">화질 보정 필터</h4>
+            <button
+              onClick={() => {
+                setBrightness(100)
+                setContrast(100)
+                setIsInverted(false)
+                setIsGrayscale(false)
+              }}
+              title="필터 초기화"
+              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Brightness Slider */}
+          <div className="flex flex-col space-y-1.5">
+            <div className="flex justify-between text-xs font-semibold text-gray-400">
+              <span>밝기</span>
+              <span className="text-indigo-400">{brightness}%</span>
+            </div>
+            <input
+              type="range"
+              min="50"
+              max="200"
+              value={brightness}
+              onChange={(e) => setBrightness(Number(e.target.value))}
+              className="w-full h-1.5 bg-[#111215] rounded-lg appearance-none cursor-pointer accent-indigo-500 border border-[#2e3039]"
+            />
+          </div>
+
+          {/* Contrast Slider */}
+          <div className="flex flex-col space-y-1.5">
+            <div className="flex justify-between text-xs font-semibold text-gray-400">
+              <span>대비</span>
+              <span className="text-indigo-400">{contrast}%</span>
+            </div>
+            <input
+              type="range"
+              min="50"
+              max="200"
+              value={contrast}
+              onChange={(e) => setContrast(Number(e.target.value))}
+              className="w-full h-1.5 bg-[#111215] rounded-lg appearance-none cursor-pointer accent-indigo-500 border border-[#2e3039]"
+            />
+          </div>
+
+          {/* Invert & Grayscale Toggles */}
+          <div className="flex space-x-2 pt-1">
+            <button
+              onClick={() => setIsInverted(!isInverted)}
+              className={cn(
+                "flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer",
+                isInverted
+                  ? "bg-indigo-600/20 border-indigo-500 text-indigo-400"
+                  : "bg-[#111215] border-[#2e3039] text-gray-400 hover:text-white hover:bg-[#252830]"
+              )}
+            >
+              색상 반전
+            </button>
+            <button
+              onClick={() => setIsGrayscale(!isGrayscale)}
+              className={cn(
+                "flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer",
+                isGrayscale
+                  ? "bg-indigo-600/20 border-indigo-500 text-indigo-400"
+                  : "bg-[#111215] border-[#2e3039] text-gray-400 hover:text-white hover:bg-[#252830]"
+              )}
+            >
+              흑백 모드
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom control bar Wrapper */}
       <div
         className={cn(
@@ -282,10 +391,7 @@ function App() {
           zoom={zoom}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onZoomReset={() => {
-            resetTransform()
-            setActiveTool('select')
-          }}
+          onZoomReset={handleResetEverything}
           onRotate={rotate}
           isFlipped={isFlipped}
           onToggleFlip={toggleFlip}
@@ -295,6 +401,8 @@ function App() {
           isCapturing={isCapturing}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
+          isFilterOpen={isFilterPanelOpen}
+          onToggleFilter={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
         />
       </div>
 

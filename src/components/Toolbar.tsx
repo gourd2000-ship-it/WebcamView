@@ -12,7 +12,8 @@ import {
   Maximize2,
   Minimize2,
   Power,
-  PowerOff
+  PowerOff,
+  SlidersHorizontal
 } from 'lucide-react'
 
 interface ToolbarProps {
@@ -31,6 +32,8 @@ interface ToolbarProps {
   isCapturing: boolean
   isFullscreen: boolean
   onToggleFullscreen: () => void
+  isFilterOpen: boolean
+  onToggleFilter: () => void
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -49,6 +52,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isCapturing,
   isFullscreen,
   onToggleFullscreen,
+  isFilterOpen,
+  onToggleFilter,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c22] border-t border-[#2e3039] select-none shrink-0 z-10 gap-4">
@@ -63,7 +68,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         />
       </div>
 
-      {/* Center: Viewer operations (Flipping, Rotating, Zooming) */}
+      {/* Center: Viewer operations (Flipping, Rotating, Zooming, Filtering) */}
       <div className="flex items-center space-x-2 bg-[#111215] p-1.5 rounded-2xl border border-[#2e3039]">
         <IconButton
           icon={FlipHorizontal}
@@ -96,6 +101,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           label="초기화 (0)"
           onClick={onZoomReset}
           disabled={!isCameraActive}
+        />
+        <div className="h-10 w-[1px] bg-[#2e3039] mx-1" />
+        <IconButton
+          icon={SlidersHorizontal}
+          label="화질 보정"
+          onClick={onToggleFilter}
+          disabled={!isCameraActive}
+          active={isFilterOpen}
         />
       </div>
 

@@ -42,21 +42,21 @@ graph TD
   - `useFullscreen` 훅 구현: HTML5 Fullscreen API 연동 및 상태 감지 완료.
 - **결과물**: "연결된 카메라 목록을 선택해 화면에 띄우고, 마우스 클릭으로 회전/반전/확대할 수 있는 라이브 뷰어".
 
-### Phase 3: Freeze & Local Capture (화면 정지 및 고해상도 저장) 🏃 진행 중
-- **상태**: 진행 중 (화면 정지 기본 로직 구현 완료, 캔버스 드로잉 유틸 구현 완료, 로컬 저장 IPC 연동 진행 예정)
+### Phase 3: Freeze & Local Capture (화면 정지 및 고해상도 저장) ✅ 완료
+- **상태**: 100% 완료
 - **목표**: 비디오 일시 정지(Freeze) 기능 및 변환 매트릭스가 반영된 고해상도 로컬 이미지 캡처/저장.
 - **주요 작업**:
   - **화면 정지**: 현재 `<video>` 프레임을 canvas에 순간 캡처하여 데이터 URL화하고, `<img src={...} />` 요소로 전환하여 정지 구현 완료.
   - **Canvas 이미지 렌더링**: CSS 변환 상태(회전, 반전, 확대)와 1:1 대응되는 좌표 매핑을 적용하여 오프스크린 Canvas에 현재 프레임을 그리는 헬퍼(`canvas.ts`) 구현 완료.
-  - **로컬 디스크 저장**: Preload 브릿지의 `window.electronAPI.saveCapture`를 통해 바이너리를 Main 프로세스로 전달, Main에서 Node.js `fs`를 이용해 `webcam-capture-YYYY-MM-DD-HHMMSS.png` 형태로 로컬 Pictures/WebcamViewer 폴더에 저장 (진행 예정).
+  - **로컬 디스크 저장**: Preload 브릿지의 `window.electronAPI.saveCapture`를 통해 바이너리를 Main 프로세스로 전달, Main에서 Node.js `fs`를 이용해 `webcam-capture-YYYY-MM-DD-HHMMSS.png` 형태로 로컬 Pictures/WebcamViewer 폴더에 저장 완료.
 - **결과물**: "원터치 화면 정지/해제 및 회전/반전/배율이 정확히 보정된 스크린샷 로컬 저장 기능".
 
-### Phase 4: Keyboard Shortcuts & Hardening (단축키 및 안정화) ⏳ 대기 중
-- **상태**: 대기 중 (전체화면 감지는 Phase 2에서 선구현 완료)
+### Phase 4: Keyboard Shortcuts & Hardening (단축키 및 안정화) ✅ 완료
+- **상태**: 100% 완료
 - **목표**: 전체화면 포함 환경에서의 전역 단축키 수신 및 예외 처리 강화.
 - **주요 작업**:
-  - `useKeyboardShortcuts` 훅 구현: `document` 레벨에서 캡처 단계(`useCapture: true`) 리스너를 바인딩하여 포커스가 없거나 전체화면이어도 단축키(`Space`, `F`, `M`, `R`, `+`, `-`, `0`, `C`, `Esc`)가 동작하도록 처리.
-  - 장치 점유 상태 예외, 권한 거부 예외, 저장 실패 예외 대응 UI 팝업 연동.
+  - `useKeyboardShortcuts` 훅 구현: `document` 레벨에서 캡처 단계(`useCapture: true`) 리스너를 바인딩하여 포커스가 없거나 전체화면이어도 단축키(`Space`, `F`, `M`, `R`, `+`, `-`, `0`, `C`, `Esc`)가 동작하도록 처리 완료.
+  - 장치 점유 상태 예외, 권한 거부 예외, 저장 실패 예외 대응 UI 알림 및 커스텀 토스트 연동 완료.
 - **결과물**: "실수 없는 키보드 핫키 처리 및 비정상 하드웨어 상태 예외에 강한 완성도 높은 클라이언트".
 
 ### Phase 5: Packaging & Release (패키징 및 배포) ⏳ 대기 중

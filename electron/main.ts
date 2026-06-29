@@ -92,7 +92,9 @@ ipcMain.handle('save-capture', async (event, arrayBuffer: ArrayBuffer, fileName:
       fs.mkdirSync(saveDir, { recursive: true })
     }
 
-    const filePath = path.join(saveDir, fileName)
+    // 경로 탐색(Path Traversal) 공격을 방지하기 위해 파일의 순수 이름만 추출
+    const safeFileName = path.basename(fileName)
+    const filePath = path.join(saveDir, safeFileName)
     const buffer = Buffer.from(arrayBuffer)
     
     await fs.promises.writeFile(filePath, buffer)

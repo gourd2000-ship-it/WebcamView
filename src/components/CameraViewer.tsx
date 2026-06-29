@@ -1,5 +1,6 @@
 import React from 'react'
 import { EmptyState } from './EmptyState'
+import { cn } from '../utils/cn'
 
 interface CameraViewerProps {
   viewerRef: React.RefObject<HTMLVideoElement | HTMLImageElement | null>
@@ -10,8 +11,15 @@ interface CameraViewerProps {
   zoom: number
   rotation: number
   isFlipped: boolean
+  panX: number
+  panY: number
+  isDragging: boolean
+  isFullscreen: boolean
   error: string | null
   onRequestPermission: () => void
+  onMouseDown: (e: React.MouseEvent) => void
+  onMouseMove: (e: React.MouseEvent) => void
+  onMouseUp: () => void
 }
 
 export const CameraViewer: React.FC<CameraViewerProps> = ({
@@ -23,8 +31,15 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
   zoom,
   rotation,
   isFlipped,
+  panX,
+  panY,
+  isDragging,
+  isFullscreen,
   error,
   onRequestPermission,
+  onMouseDown,
+  onMouseMove,
+  onMouseUp,
 }) => {
   // Bind MediaStream to video element srcObject
   React.useEffect(() => {
@@ -38,26 +53,44 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
   }, [viewerRef, stream, isFrozen, isCameraActive])
 
   // Compute transform style string
-  // Order of transform is crucial: Mirror first, then rotate, then zoom
+  // translate is first so it translates in parent screen coordinate system
   const transformStyle = {
-    transform: `rotate(${rotation}deg) scaleX(${isFlipped ? -1 : 1}) scale(${zoom})`,
+    transform: `translate(${panX}px, ${panY}px) rotate(${rotation}deg) scaleX(${isFlipped ? -1 : 1}) scale(${zoom})`,
     transformOrigin: 'center center',
   }
+
+  // Disable transitions while dragging for instant responsive feedback
+  const transitionClass = isDragging ? 'transition-none' : 'transition-transform duration-200 ease-out'
+  const cursorClass = isDragging ? 'cursor-grabbing' : (zoom > 1 ? 'cursor-grab' : 'cursor-default')
 
   return (
     <div className="flex-1 relative flex items-center justify-center bg-[#111215] overflow-hidden select-none">
       {!isCameraActive ? (
         <EmptyState error={error} onRequestPermission={onRequestPermission} />
       ) : (
-        <div className="w-full h-full flex items-center justify-center p-4">
-          <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-[#08090b] border border-[#2e3039]">
+        <div className={cn("w-full h-full flex items-center justify-center", isFullscreen ? "p-0" : "p-4")}>
+          <div
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            className={cn(
+              "relative w-full h-full flex items-center justify-center overflow-hidden bg-[#08090b]",
+              isFullscreen ? "rounded-none border-0" : "rounded-2xl border border-[#2e3039]",
+              cursorClass
+            )}
+          >
             {isFrozen && frozenDataUrl ? (
               <img
                 ref={viewerRef as React.RefObject<HTMLImageElement | null>}
                 src={frozenDataUrl}
                 alt="Frozen frame"
                 style={transformStyle}
-                className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out pointer-events-none"
+                className={cn(
+                  "pointer-events-none",
+                  isFullscreen ? "w-full h-full object-cover" : "max-w-full max-h-full object-contain",
+                  transitionClass
+                )}
               />
             ) : (
               <video
@@ -66,13 +99,17 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
                 playsInline
                 muted
                 style={transformStyle}
-                className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out pointer-events-none"
+                className={cn(
+                  "pointer-events-none",
+                  isFullscreen ? "w-full h-full object-cover" : "max-w-full max-h-full object-contain",
+                  transitionClass
+                )}
               />
             )}
 
             {/* Indicator overlays */}
             {isFrozen && (
-              <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-bold shadow-lg uppercase tracking-wider animate-pulse">
+              <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-bold shadow-lg uppercase tracking-wider animate-pulse z-20">
                 화면 정지됨 (Space)
               </div>
             )}

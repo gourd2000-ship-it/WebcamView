@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { StatusBar } from './components/StatusBar'
 import { CameraViewer } from './components/CameraViewer'
 import { Toolbar } from './components/Toolbar'
@@ -7,6 +7,7 @@ import { useViewerTransform } from './hooks/useViewerTransform'
 import { useFullscreen } from './hooks/useFullscreen'
 import { useCapture } from './hooks/useCapture'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { cn } from './utils/cn'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 function App() {
@@ -31,11 +32,17 @@ function App() {
     zoom,
     rotation,
     isFlipped,
+    panX,
+    panY,
+    isDragging,
     zoomIn,
     zoomOut,
     rotate,
     toggleFlip,
     resetTransform,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
   } = useViewerTransform()
 
   // Fullscreen Hook
@@ -50,6 +57,9 @@ function App() {
 
   // Custom Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+
+  // Fullscreen controls visibility
+  const [showControls, setShowControls] = useState<boolean>(true)
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
@@ -110,6 +120,9 @@ function App() {
   const handleCapture = async () => {
     if (!viewerRef.current || !isCameraActive) return
 
+    // In canvas rendering, we pass panX and panY to preserve the current pan crop
+    // But since the customer request did not specify if crop should be saved,
+    // let's pass the transforms to capture as usual.
     const result = await capture(viewerRef.current, zoom, rotation, isFlipped)
     
     if (result.success) {
@@ -134,20 +147,55 @@ function App() {
     isCameraActive,
   })
 
+  // Fullscreen UI Control Autohide Effect
+  useEffect(() => {
+    if (!isFullscreen) {
+      setShowControls(true)
+      return
+    }
+
+    let timeoutId: any = null
+
+    const handleMouseMove = () => {
+      setShowControls(true)
+      if (timeoutId) clearTimeout(timeoutId)
+      
+      timeoutId = setTimeout(() => {
+        setShowControls(false)
+      }, 2500)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    handleMouseMove()
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [isFullscreen])
+
   return (
-    <div className="flex-1 flex flex-col justify-between h-full bg-[#111215] text-[#f3f4f6] relative">
-      {/* Top Status Bar & Device Selector */}
-      <StatusBar
-        devices={devices}
-        selectedDeviceId={selectedDeviceId}
-        onSelectDevice={handleSelectDevice}
-        zoom={zoom}
-        rotation={rotation}
-        isFlipped={isFlipped}
-        isFrozen={isFrozen}
-        isFullscreen={isFullscreen}
-        isLoading={isLoading}
-      />
+    <div className="flex-1 flex flex-col justify-between h-full bg-[#111215] text-[#f3f4f6] relative overflow-hidden">
+      {/* Top Status Bar Wrapper */}
+      <div
+        className={cn(
+          "shrink-0 transition-opacity duration-300",
+          isFullscreen && "absolute top-0 left-0 w-full z-30 bg-[#1a1c22]/85 backdrop-blur-md shadow-lg",
+          isFullscreen && (showControls ? "opacity-100" : "opacity-0 pointer-events-none")
+        )}
+      >
+        <StatusBar
+          devices={devices}
+          selectedDeviceId={selectedDeviceId}
+          onSelectDevice={handleSelectDevice}
+          zoom={zoom}
+          rotation={rotation}
+          isFlipped={isFlipped}
+          isFrozen={isFrozen}
+          isFullscreen={isFullscreen}
+          isLoading={isLoading}
+        />
+      </div>
 
       {/* Main View Area */}
       <CameraViewer
@@ -159,28 +207,43 @@ function App() {
         zoom={zoom}
         rotation={rotation}
         isFlipped={isFlipped}
+        panX={panX}
+        panY={panY}
+        isDragging={isDragging}
+        isFullscreen={isFullscreen}
         error={error}
         onRequestPermission={requestPermission}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
       />
 
-      {/* Bottom control bar */}
-      <Toolbar
-        isCameraActive={isCameraActive}
-        onToggleCameraActive={handleToggleCameraActive}
-        zoom={zoom}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onZoomReset={resetTransform}
-        onRotate={rotate}
-        isFlipped={isFlipped}
-        onToggleFlip={toggleFlip}
-        isFrozen={isFrozen}
-        onToggleFreeze={handleToggleFreeze}
-        onCapture={handleCapture}
-        isCapturing={isCapturing}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-      />
+      {/* Bottom control bar Wrapper */}
+      <div
+        className={cn(
+          "shrink-0 transition-opacity duration-300",
+          isFullscreen && "absolute bottom-0 left-0 w-full z-30 bg-[#1a1c22]/85 backdrop-blur-md shadow-lg",
+          isFullscreen && (showControls ? "opacity-100" : "opacity-0 pointer-events-none")
+        )}
+      >
+        <Toolbar
+          isCameraActive={isCameraActive}
+          onToggleCameraActive={handleToggleCameraActive}
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onZoomReset={resetTransform}
+          onRotate={rotate}
+          isFlipped={isFlipped}
+          onToggleFlip={toggleFlip}
+          isFrozen={isFrozen}
+          onToggleFreeze={handleToggleFreeze}
+          onCapture={handleCapture}
+          isCapturing={isCapturing}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+        />
+      </div>
 
       {/* Toast Alert Notifications */}
       {toast && (

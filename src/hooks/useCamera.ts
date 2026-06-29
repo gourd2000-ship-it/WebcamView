@@ -22,7 +22,7 @@ export interface UseCameraResult {
 export function useCamera(): UseCameraResult {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('')
-  const [isCameraActive, setIsCameraActive] = useState<boolean>(false)
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(true)
   const [stream, setStream] = useState<MediaStream | null>(null)
   
   // Freeze States

@@ -33,6 +33,9 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
+  // 시작 시 확실하게 전체화면이 적용되도록 명시적 호출 추가
+  mainWindow.setFullScreen(true)
+
   // OS-level Fullscreen Event Listeners to keep React in sync
   mainWindow.on('enter-full-screen', () => {
     mainWindow?.webContents.send('fullscreen-change', true)

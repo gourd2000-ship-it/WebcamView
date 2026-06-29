@@ -183,6 +183,9 @@ function App() {
     onCapture: handleCapture,
     onExitFullscreen: exitFullscreen,
     isCameraActive,
+    onSelectTool: setActiveTool,
+    onUndo: handleUndo,
+    onClearAll: handleClearAll,
   })
 
   // Fullscreen UI Control Autohide Effect

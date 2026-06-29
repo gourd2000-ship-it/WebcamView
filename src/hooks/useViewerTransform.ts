@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type React from 'react'
 
 export interface UseViewerTransformResult {
@@ -27,6 +27,14 @@ export function useViewerTransform(): UseViewerTransformResult {
   const [isDragging, setIsDragging] = useState<boolean>(false)
 
   const startDragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
+
+  // Reset panning automatically when zoom returns to 1.0 or lower
+  useEffect(() => {
+    if (zoom <= 1.0) {
+      setPanX(0)
+      setPanY(0)
+    }
+  }, [zoom])
 
   // Zoom In: Max 500% (5.0)
   const zoomIn = useCallback(() => {
@@ -59,6 +67,8 @@ export function useViewerTransform(): UseViewerTransformResult {
 
   // Mouse Drag to Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only allow panning if zoom is greater than 100%
+    if (zoom <= 1.0) return
     // Only initiate dragging with the primary (left) button
     if (e.button !== 0) return
     e.preventDefault()
@@ -69,7 +79,7 @@ export function useViewerTransform(): UseViewerTransformResult {
       panY,
     }
     setIsDragging(true)
-  }, [panX, panY])
+  }, [panX, panY, zoom])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!startDragRef.current) return
@@ -81,12 +91,75 @@ export function useViewerTransform(): UseViewerTransformResult {
       return
     }
 
+    if (zoom <= 1.0) return
+
     e.preventDefault()
-    const dx = e.clientX - startDragRef.current.x
-    const dy = e.clientY - startDragRef.current.y
-    setPanX(startDragRef.current.panX + dx)
-    setPanY(startDragRef.current.panY + dy)
-  }, [])
+    
+    const container = e.currentTarget as HTMLElement
+    const mediaEl = container.querySelector('video, img') as HTMLVideoElement | HTMLImageElement | null
+    
+    let constrainedPanX = 0
+    let constrainedPanY = 0
+    
+    const targetPanX = startDragRef.current.panX + (e.clientX - startDragRef.current.x)
+    const targetPanY = startDragRef.current.panY + (e.clientY - startDragRef.current.y)
+
+    if (mediaEl) {
+      const W = container.clientWidth
+      const H = container.clientHeight
+      
+      const srcW = mediaEl instanceof HTMLVideoElement ? mediaEl.videoWidth : (mediaEl as HTMLImageElement).naturalWidth || 0
+      const srcH = mediaEl instanceof HTMLVideoElement ? mediaEl.videoHeight : (mediaEl as HTMLImageElement).naturalHeight || 0
+      
+      if (srcW > 0 && srcH > 0) {
+        const videoRatio = srcW / srcH
+        const containerRatio = W / H
+        const isCover = mediaEl.classList.contains('object-cover')
+        
+        let w = W
+        let h = H
+        
+        if (isCover) {
+          if (videoRatio > containerRatio) {
+            h = H
+            w = H * videoRatio
+          } else {
+            w = W
+            h = W / videoRatio
+          }
+        } else {
+          // contain mode
+          if (videoRatio > containerRatio) {
+            w = W
+            h = W / videoRatio
+          } else {
+            h = H
+            w = H * videoRatio
+          }
+        }
+        
+        // Calculate visual dimensions after scaling
+        const zoomedW = w * zoom
+        const zoomedH = h * zoom
+        
+        // Calculate max pan limits to prevent exposing empty margins
+        const maxPanX = zoomedW > W ? (zoomedW - W) / 2 : 0
+        const maxPanY = zoomedH > H ? (zoomedH - H) / 2 : 0
+        
+        constrainedPanX = Math.max(-maxPanX, Math.min(maxPanX, targetPanX))
+        constrainedPanY = Math.max(-maxPanY, Math.min(maxPanY, targetPanY))
+      } else {
+        constrainedPanX = targetPanX
+        constrainedPanY = targetPanY
+      }
+    } else {
+      constrainedPanX = targetPanX
+      constrainedPanY = targetPanY
+    }
+
+    setPanX(constrainedPanX)
+    setPanY(constrainedPanY)
+  }, [zoom])
 
   const handleMouseUp = useCallback(() => {
     startDragRef.current = null

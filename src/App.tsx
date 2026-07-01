@@ -406,6 +406,11 @@ function App() {
           onToggleFullscreen={toggleFullscreen}
           isFilterOpen={isFilterPanelOpen}
           onToggleFilter={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+          onQuitApp={() => {
+            if (window.electronAPI && window.electronAPI.quitApp) {
+              window.electronAPI.quitApp()
+            }
+          }}
         />
       </div>
 

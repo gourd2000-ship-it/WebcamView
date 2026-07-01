@@ -76,7 +76,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
       <div className="flex flex-col space-y-2 border-b border-[#2e3039] pb-3">
         <button
           onClick={() => setActiveTool('select')}
-          title="이동 및 줌 선택 (단축키 0)"
+          title="이동 및 선택 (V)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'select'
@@ -88,7 +88,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTool('pen')}
-          title="일반 펜"
+          title="일반 펜 (P)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'pen'
@@ -100,7 +100,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTool('highlighter')}
-          title="형광펜"
+          title="형광펜 (H)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'highlighter'
@@ -112,7 +112,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTool('eraser')}
-          title="지우개"
+          title="지우개 (E)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'eraser'
@@ -128,7 +128,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
       <div className="flex flex-col space-y-2 border-b border-[#2e3039] pb-3">
         <button
           onClick={() => setActiveTool('line')}
-          title="직선 그리기"
+          title="직선 그리기 (L)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'line'
@@ -140,7 +140,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTool('rect')}
-          title="직사각형 그리기"
+          title="직사각형 그리기 (S)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'rect'
@@ -152,7 +152,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTool('circle')}
-          title="원 그리기"
+          title="원 그리기 (O)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'circle'
@@ -164,7 +164,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTool('arrow')}
-          title="화살표 그리기"
+          title="화살표 그리기 (A)"
           className={cn(
             "p-2.5 rounded-xl transition-colors cursor-pointer",
             activeTool === 'arrow'
@@ -224,14 +224,14 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
       <div className="flex flex-col space-y-2">
         <button
           onClick={onUndo}
-          title="그리기 실행 취소"
+          title="실행 취소 (Z / Ctrl+Z)"
           className="p-2.5 rounded-xl text-gray-400 hover:bg-[#252830] hover:text-white transition-colors cursor-pointer"
         >
           <Undo2 className="w-5 h-5" />
         </button>
         <button
           onClick={onClearAll}
-          title="판서 전체 지우기"
+          title="전체 지우기 (Delete)"
           className="p-2.5 rounded-xl text-gray-400 hover:bg-rose-950/30 hover:text-rose-400 transition-colors cursor-pointer"
         >
           <Trash2 className="w-5 h-5" />

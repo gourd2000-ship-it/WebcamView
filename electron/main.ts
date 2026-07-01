@@ -153,3 +153,8 @@ ipcMain.on('exit-fullscreen', () => {
     mainWindow.setFullScreen(false)
   }
 })
+
+// IPC channel for exiting the app
+ipcMain.on('quit-app', () => {
+  app.quit()
+})

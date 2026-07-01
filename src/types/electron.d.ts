@@ -7,6 +7,7 @@ export interface ElectronAPI {
   isFullscreen: () => Promise<boolean>
   toggleFullscreen: () => void
   exitFullscreen: () => void
+  quitApp: () => void
   onFullscreenChange: (callback: (val: boolean) => void) => () => void
 }
 

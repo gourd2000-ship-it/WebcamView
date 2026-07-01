@@ -13,7 +13,8 @@ import {
   Minimize2,
   Power,
   PowerOff,
-  SlidersHorizontal
+  SlidersHorizontal,
+  LogOut
 } from 'lucide-react'
 
 interface ToolbarProps {
@@ -34,6 +35,7 @@ interface ToolbarProps {
   onToggleFullscreen: () => void
   isFilterOpen: boolean
   onToggleFilter: () => void
+  onQuitApp: () => void
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -54,6 +56,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onToggleFullscreen,
   isFilterOpen,
   onToggleFilter,
+  onQuitApp,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c22] border-t border-[#2e3039] select-none shrink-0 z-10 gap-4">
@@ -136,6 +139,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onClick={onToggleFullscreen}
           disabled={!isCameraActive}
           active={isFullscreen}
+        />
+        <IconButton
+          icon={LogOut}
+          label="프로그램 종료"
+          onClick={onQuitApp}
+          variant="danger"
         />
       </div>
     </div>

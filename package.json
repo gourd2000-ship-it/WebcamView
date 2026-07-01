@@ -1,7 +1,7 @@
 {
   "name": "webcamviewer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Windows용 로컬 실물화상기 데스크톱 앱",
   "author": "Antigravity",
   "type": "module",

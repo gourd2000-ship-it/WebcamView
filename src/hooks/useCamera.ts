@@ -208,25 +208,43 @@ export function useCamera(): UseCameraResult {
       const capabilities = (typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {}) as any
       if (!capabilities.focusMode) return false
 
+      const settings = (typeof videoTrack.getSettings === 'function' ? videoTrack.getSettings() : {}) as any
+      const currentMode = settings.focusMode
+
+      // 1. If currently in manual focus, switch to continuous focus to trigger autofocus sweep
+      if (currentMode === 'manual' && capabilities.focusMode.includes('continuous')) {
+        await videoTrack.applyConstraints({
+          advanced: [{ focusMode: 'continuous' } as any]
+        })
+        return true
+      }
+
+      // 2. If continuous autofocus is supported, toggle focus mode to force autofocus sweep
+      if (capabilities.focusMode.includes('continuous')) {
+        if (capabilities.focusMode.includes('manual')) {
+          // Switch to manual mode to lock/reset focus state
+          await videoTrack.applyConstraints({
+            advanced: [{ focusMode: 'manual' } as any]
+          })
+          // Wait 250ms for hardware driver to register the manual state change
+          await new Promise((resolve) => setTimeout(resolve, 250))
+        }
+        
+        // Switch back to continuous focus to trigger hardware autofocus sweep
+        await videoTrack.applyConstraints({
+          advanced: [{ focusMode: 'continuous' } as any]
+        })
+        return true
+      }
+
+      // 3. Fallback: If single-shot is supported, trigger single-shot focus
       if (capabilities.focusMode.includes('single-shot')) {
         await videoTrack.applyConstraints({
           advanced: [{ focusMode: 'single-shot' } as any]
         })
         return true
       }
-      
-      if (capabilities.focusMode.includes('continuous')) {
-        if (capabilities.focusMode.includes('manual')) {
-          await videoTrack.applyConstraints({
-            advanced: [{ focusMode: 'manual' } as any]
-          })
-        }
-        await videoTrack.applyConstraints({
-          advanced: [{ focusMode: 'continuous' } as any]
-        })
-        return true
-      }
-      
+
       return false
     } catch (err) {
       console.error('Failed to trigger autofocus:', err)

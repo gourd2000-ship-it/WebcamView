@@ -27,8 +27,9 @@ function App() {
     isLoading,
     error,
     requestPermission,
-    triggerAutoFocus,
     isAutoFocusSupported,
+    isFocusLocked,
+    toggleFocusLock,
   } = useCamera()
 
   // Viewer Transformation Hook
@@ -414,12 +415,13 @@ function App() {
             }
           }}
           isAutoFocusSupported={isAutoFocusSupported}
-          onTriggerAutoFocus={async () => {
-            const success = await triggerAutoFocus()
+          isFocusLocked={isFocusLocked}
+          onToggleFocusLock={async () => {
+            const success = await toggleFocusLock()
             if (success) {
-              showToast('자동 초점을 조절했습니다.', 'success')
+              showToast(!isFocusLocked ? '초점을 고정했습니다.' : '자동 초점으로 전환했습니다.', 'success')
             } else {
-              showToast('자동 초점 조절에 실패했거나 지원하지 않는 장치입니다.', 'error')
+              showToast('초점 상태 변경에 실패했습니다.', 'error')
             }
           }}
         />

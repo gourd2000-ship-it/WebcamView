@@ -31,24 +31,24 @@
   * `canvas.clientWidth` 및 `canvas.clientHeight` 레이아웃 영역 비율을 기준하여 실제 캔버스 내부 해상도로 스케일 복원.
 * **인수 조건**: 90도/180도/270도 회전, 좌우반전, 확대 상태에서도 펜/형광펜/지우개/도형 그리기가 커서 위치에 정확하게 그려짐.
 
-### 태스크 3: 웹캠 비디오 트랙 자동 초점 맞추기 API 연동
-* **설명**: WebRTC `applyConstraints` 인터페이스 제어 및 자동 초점 강제 트리거.
+### 태스크 3: 웹캠 비디오 트랙 초점 고정(Focus Lock) API 연동
+* **설명**: WebRTC `applyConstraints` 인터페이스 제어 및 초점 고정/자동 제어.
 * **수정 파일**:
   * [src/hooks/useCamera.ts](file:///d:/codes/WebcamViewer/src/hooks/useCamera.ts)
 * **내용**:
-  * `isAutoFocusSupported` 상태(초점 조절 기능 지원 유무) 및 `triggerAutoFocus` 비동기 콜백 추가.
-  * `triggerAutoFocus` 실행 시 현재 초점 모드를 읽은 후, `continuous` 모드라면 `manual`로 전환 후 250ms 딜레이를 두어 하드웨어 드라이버를 리셋하고, 다시 `continuous`로 복원하여 비디오 드라이버에 재포커싱(Refocus)을 강제 트리거함.
-* **인수 조건**: 자동 초점 기능을 지원하는 장치 감지 시 `isAutoFocusSupported`가 true가 되며 오토포커싱 재탐색이 성공함.
+  * `isAutoFocusSupported` 상태(초점 모드 제어 기능 지원 유무, manual/continuous 둘 다 가능한지 확인) 및 `isFocusLocked` 상태, `toggleFocusLock` 메서드 신설.
+  * `toggleFocusLock` 호출 시 현재 락(lock) 상태를 반전하여 `true`라면 `focusMode: 'manual'`(초점 고정), `false`라면 `focusMode: 'continuous'`(자동 초점 활성화)를 적용함.
+* **인수 조건**: 자동 초점 및 수동 제어를 지원하는 장치 감지 시 `isAutoFocusSupported`가 true가 되며 초점 상태 토글이 성공함.
 
-### 태스크 4: 툴바 자동 초점 맞추기 버튼 UI 추가
-* **설명**: 하단 툴바에 Focus 아이콘 추가 및 상태 연동.
+### 태스크 4: 툴바 초점 고정 버튼 UI 추가
+* **설명**: 하단 툴바에 Lock/Unlock 아이콘 추가 및 상태 연동.
 * **수정 파일**:
   * [src/components/Toolbar.tsx](file:///d:/codes/WebcamViewer/src/components/Toolbar.tsx)
   * [src/App.tsx](file:///d:/codes/WebcamViewer/src/App.tsx)
 * **내용**:
-  * `Toolbar.tsx`에 `Focus` 아이콘 단추를 추가하고 `isAutoFocusSupported` 값에 따라 노출 제어.
-  * `App.tsx`에서 `useCamera`의 `triggerAutoFocus` 메서드를 `Toolbar`의 `onTriggerAutoFocus` 프로프와 매핑.
-* **인수 조건**: 하단바 좌측에 자동초점 버튼이 올바르게 나타나며, 클릭 시 오토포커싱 요청이 송신됨.
+  * `Toolbar.tsx`에 `Lock`, `Unlock` 아이콘 단추를 추가하고 `isAutoFocusSupported` 값에 따라 노출 제어. `active` 상태는 `isFocusLocked`와 연동.
+  * `App.tsx`에서 `useCamera`의 `toggleFocusLock` 및 `isFocusLocked` 상태를 `Toolbar`와 매핑.
+* **인수 조건**: 하단바 좌측에 초점 고정 버튼이 노출되며, 클릭 시 초점이 잠기거나(Lock) 풀려 자동초점(Unlock) 상태로 전환됨.
 
 ---
 

@@ -17,8 +17,9 @@ export interface UseCameraResult {
   error: string | null
   setError: (err: string | null) => void
   requestPermission: () => Promise<void>
-  triggerAutoFocus: () => Promise<boolean>
   isAutoFocusSupported: boolean
+  isFocusLocked: boolean
+  toggleFocusLock: () => Promise<boolean>
 }
 
 export function useCamera(): UseCameraResult {
@@ -35,6 +36,7 @@ export function useCamera(): UseCameraResult {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [isAutoFocusSupported, setIsAutoFocusSupported] = useState<boolean>(false)
+  const [isFocusLocked, setIsFocusLocked] = useState<boolean>(false)
 
   // Track active stream ref to prevent closure conflicts
   const activeStreamRef = useRef<MediaStream | null>(null)
@@ -176,7 +178,12 @@ export function useCamera(): UseCameraResult {
     }
   }, [])
 
-  // Detect auto focus support
+  // Reset focus lock state when stream changes
+  useEffect(() => {
+    setIsFocusLocked(false)
+  }, [stream])
+
+  // Detect auto focus support (both manual and continuous needed for lock)
   useEffect(() => {
     if (stream) {
       const videoTrack = stream.getVideoTracks()[0]
@@ -185,7 +192,8 @@ export function useCamera(): UseCameraResult {
           const capabilities = (typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {}) as any
           setIsAutoFocusSupported(
             !!(capabilities.focusMode && 
-               (capabilities.focusMode.includes('continuous') || capabilities.focusMode.includes('single-shot')))
+               capabilities.focusMode.includes('continuous') && 
+               capabilities.focusMode.includes('manual'))
           )
         } catch (e) {
           console.error('Error reading video capabilities:', e)
@@ -199,58 +207,32 @@ export function useCamera(): UseCameraResult {
     }
   }, [stream])
 
-  const triggerAutoFocus = useCallback(async () => {
+  const toggleFocusLock = useCallback(async () => {
     if (!stream) return false
     const videoTrack = stream.getVideoTracks()[0]
     if (!videoTrack) return false
 
     try {
       const capabilities = (typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {}) as any
-      if (!capabilities.focusMode) return false
-
-      const settings = (typeof videoTrack.getSettings === 'function' ? videoTrack.getSettings() : {}) as any
-      const currentMode = settings.focusMode
-
-      // 1. If currently in manual focus, switch to continuous focus to trigger autofocus sweep
-      if (currentMode === 'manual' && capabilities.focusMode.includes('continuous')) {
-        await videoTrack.applyConstraints({
-          advanced: [{ focusMode: 'continuous' } as any]
-        })
-        return true
+      if (!capabilities.focusMode || 
+          !capabilities.focusMode.includes('manual') || 
+          !capabilities.focusMode.includes('continuous')) {
+        return false
       }
 
-      // 2. If continuous autofocus is supported, toggle focus mode to force autofocus sweep
-      if (capabilities.focusMode.includes('continuous')) {
-        if (capabilities.focusMode.includes('manual')) {
-          // Switch to manual mode to lock/reset focus state
-          await videoTrack.applyConstraints({
-            advanced: [{ focusMode: 'manual' } as any]
-          })
-          // Wait 250ms for hardware driver to register the manual state change
-          await new Promise((resolve) => setTimeout(resolve, 250))
-        }
-        
-        // Switch back to continuous focus to trigger hardware autofocus sweep
-        await videoTrack.applyConstraints({
-          advanced: [{ focusMode: 'continuous' } as any]
-        })
-        return true
-      }
-
-      // 3. Fallback: If single-shot is supported, trigger single-shot focus
-      if (capabilities.focusMode.includes('single-shot')) {
-        await videoTrack.applyConstraints({
-          advanced: [{ focusMode: 'single-shot' } as any]
-        })
-        return true
-      }
-
-      return false
+      const nextLockState = !isFocusLocked
+      // Set focusMode to 'manual' to lock it, or 'continuous' to unlock (autofocus)
+      await videoTrack.applyConstraints({
+        advanced: [{ focusMode: nextLockState ? 'manual' : 'continuous' } as any]
+      })
+      
+      setIsFocusLocked(nextLockState)
+      return true
     } catch (err) {
-      console.error('Failed to trigger autofocus:', err)
+      console.error('Failed to toggle focus lock:', err)
       return false
     }
-  }, [stream])
+  }, [stream, isFocusLocked])
 
   return {
     devices,
@@ -267,7 +249,8 @@ export function useCamera(): UseCameraResult {
     error,
     setError,
     requestPermission,
-    triggerAutoFocus,
     isAutoFocusSupported,
+    isFocusLocked,
+    toggleFocusLock,
   }
 }

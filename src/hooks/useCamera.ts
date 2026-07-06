@@ -17,6 +17,8 @@ export interface UseCameraResult {
   error: string | null
   setError: (err: string | null) => void
   requestPermission: () => Promise<void>
+  triggerAutoFocus: () => Promise<boolean>
+  isAutoFocusSupported: boolean
 }
 
 export function useCamera(): UseCameraResult {
@@ -32,6 +34,7 @@ export function useCamera(): UseCameraResult {
   // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAutoFocusSupported, setIsAutoFocusSupported] = useState<boolean>(false)
 
   // Track active stream ref to prevent closure conflicts
   const activeStreamRef = useRef<MediaStream | null>(null)
@@ -173,6 +176,64 @@ export function useCamera(): UseCameraResult {
     }
   }, [])
 
+  // Detect auto focus support
+  useEffect(() => {
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0]
+      if (videoTrack) {
+        try {
+          const capabilities = (typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {}) as any
+          setIsAutoFocusSupported(
+            !!(capabilities.focusMode && 
+               (capabilities.focusMode.includes('continuous') || capabilities.focusMode.includes('single-shot')))
+          )
+        } catch (e) {
+          console.error('Error reading video capabilities:', e)
+          setIsAutoFocusSupported(false)
+        }
+      } else {
+        setIsAutoFocusSupported(false)
+      }
+    } else {
+      setIsAutoFocusSupported(false)
+    }
+  }, [stream])
+
+  const triggerAutoFocus = useCallback(async () => {
+    if (!stream) return false
+    const videoTrack = stream.getVideoTracks()[0]
+    if (!videoTrack) return false
+
+    try {
+      const capabilities = (typeof videoTrack.getCapabilities === 'function' ? videoTrack.getCapabilities() : {}) as any
+      if (!capabilities.focusMode) return false
+
+      if (capabilities.focusMode.includes('single-shot')) {
+        await videoTrack.applyConstraints({
+          advanced: [{ focusMode: 'single-shot' } as any]
+        })
+        return true
+      }
+      
+      if (capabilities.focusMode.includes('continuous')) {
+        if (capabilities.focusMode.includes('manual')) {
+          await videoTrack.applyConstraints({
+            advanced: [{ focusMode: 'manual' } as any]
+          })
+        }
+        await videoTrack.applyConstraints({
+          advanced: [{ focusMode: 'continuous' } as any]
+        })
+        return true
+      }
+      
+      return false
+    } catch (err) {
+      console.error('Failed to trigger autofocus:', err)
+      return false
+    }
+  }, [stream])
+
   return {
     devices,
     selectedDeviceId,
@@ -188,5 +249,7 @@ export function useCamera(): UseCameraResult {
     error,
     setError,
     requestPermission,
+    triggerAutoFocus,
+    isAutoFocusSupported,
   }
 }

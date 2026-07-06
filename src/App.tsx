@@ -27,6 +27,8 @@ function App() {
     isLoading,
     error,
     requestPermission,
+    triggerAutoFocus,
+    isAutoFocusSupported,
   } = useCamera()
 
   // Viewer Transformation Hook
@@ -409,6 +411,15 @@ function App() {
           onQuitApp={() => {
             if (window.electronAPI && window.electronAPI.quitApp) {
               window.electronAPI.quitApp()
+            }
+          }}
+          isAutoFocusSupported={isAutoFocusSupported}
+          onTriggerAutoFocus={async () => {
+            const success = await triggerAutoFocus()
+            if (success) {
+              showToast('자동 초점을 조절했습니다.', 'success')
+            } else {
+              showToast('자동 초점 조절에 실패했거나 지원하지 않는 장치입니다.', 'error')
             }
           }}
         />

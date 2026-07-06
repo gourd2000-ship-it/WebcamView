@@ -27,6 +27,11 @@ interface AnnotationCanvasProps {
   isCameraActive: boolean
   className?: string
   style?: React.CSSProperties
+  
+  // Props for coordinate transformation
+  zoom: number
+  rotation: number
+  isFlipped: boolean
 }
 
 export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
@@ -42,21 +47,53 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   isCameraActive,
   className,
   style,
+  zoom,
+  rotation,
+  isFlipped,
 }) => {
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentPath, setCurrentPath] = useState<DrawingPath | null>(null)
 
-  // Map mouse event client coordinates to internal canvas coordinates
+  // Map mouse event client coordinates to internal canvas coordinates with inverse CSS transform
   const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current
-    if (!canvas) return { x: 0, y: 0 }
+    if (!canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return { x: 0, y: 0 }
     
     const rect = canvas.getBoundingClientRect()
-    // clientX and clientY relative to bounding rect mapped to internal resolution
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height
+    
+    // 1. Get coordinates relative to the center of the bounding box
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
+    const screenX = e.clientX - centerX
+    const screenY = e.clientY - centerY
+
+    // 2. Apply inverse rotation (convert rotation degrees to radians and invert it)
+    const rad = (-rotation * Math.PI) / 180
+    const cosVal = Math.cos(rad)
+    const sinVal = Math.sin(rad)
+    
+    let rx = screenX * cosVal - screenY * sinVal
+    let ry = screenX * sinVal + screenY * cosVal
+
+    // 3. Apply inverse horizontal flip
+    if (isFlipped) {
+      rx = -rx
+    }
+
+    // 4. Apply inverse zoom
+    const unzoomedX = rx / zoom
+    const unzoomedY = ry / zoom
+
+    // 5. Map to layout coordinates (relative to layout top-left)
+    const layoutX = unzoomedX + canvas.clientWidth / 2
+    const layoutY = unzoomedY + canvas.clientHeight / 2
+
+    // 6. Scale to internal canvas resolution
+    const x = (layoutX / canvas.clientWidth) * canvas.width
+    const y = (layoutY / canvas.clientHeight) * canvas.height
+
     return { x, y }
-  }, [canvasRef])
+  }, [canvasRef, zoom, rotation, isFlipped, width, height])
 
   // Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

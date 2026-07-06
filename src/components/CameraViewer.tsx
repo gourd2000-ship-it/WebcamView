@@ -195,6 +195,9 @@ export const CameraViewer: React.FC<CameraViewerProps> = ({
                 isFullscreen ? "w-full h-full object-cover" : "max-w-full max-h-full object-contain",
                 transitionClass
               )}
+              zoom={zoom}
+              rotation={rotation}
+              isFlipped={isFlipped}
             />
 
             {/* Indicator overlays */}

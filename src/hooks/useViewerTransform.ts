@@ -21,7 +21,7 @@ export interface UseViewerTransformResult {
 export function useViewerTransform(): UseViewerTransformResult {
   const [zoom, setZoom] = useState<number>(1.0)
   const [rotation, setRotation] = useState<number>(0)
-  const [isFlipped, setIsFlipped] = useState<boolean>(false)
+  const [isFlipped, setIsFlipped] = useState<boolean>(true)
   const [panX, setPanX] = useState<number>(0)
   const [panY, setPanY] = useState<number>(0)
   const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -60,7 +60,7 @@ export function useViewerTransform(): UseViewerTransformResult {
   const resetTransform = useCallback(() => {
     setZoom(1.0)
     setRotation(0)
-    setIsFlipped(false)
+    setIsFlipped(true)
     setPanX(0)
     setPanY(0)
   }, [])

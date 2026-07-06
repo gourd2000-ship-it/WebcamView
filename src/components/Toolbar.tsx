@@ -14,7 +14,8 @@ import {
   Power,
   PowerOff,
   SlidersHorizontal,
-  LogOut
+  LogOut,
+  Focus
 } from 'lucide-react'
 
 interface ToolbarProps {
@@ -36,6 +37,8 @@ interface ToolbarProps {
   isFilterOpen: boolean
   onToggleFilter: () => void
   onQuitApp: () => void
+  isAutoFocusSupported: boolean
+  onTriggerAutoFocus: () => void
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -57,11 +60,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isFilterOpen,
   onToggleFilter,
   onQuitApp,
+  isAutoFocusSupported,
+  onTriggerAutoFocus,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c22] border-t border-[#2e3039] select-none shrink-0 z-10 gap-4">
-      {/* Left: Camera Power ON/OFF */}
-      <div className="flex items-center">
+      {/* Left: Camera Power ON/OFF & Auto Focus */}
+      <div className="flex items-center space-x-2">
         <IconButton
           icon={isCameraActive ? PowerOff : Power}
           label={isCameraActive ? "카메라 끄기" : "카메라 켜기"}
@@ -69,6 +74,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           variant={isCameraActive ? "danger" : "success"}
           active={isCameraActive}
         />
+        {isAutoFocusSupported && (
+          <IconButton
+            icon={Focus}
+            label="자동 초점 맞추기"
+            onClick={onTriggerAutoFocus}
+            disabled={!isCameraActive}
+          />
+        )}
       </div>
 
       {/* Center: Viewer operations (Flipping, Rotating, Zooming, Filtering) */}

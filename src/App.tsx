@@ -30,6 +30,10 @@ function App() {
     isAutoFocusSupported,
     isFocusLocked,
     toggleFocusLock,
+    focusDistance,
+    focusDistanceRange,
+    isFocusDistanceSupported,
+    setManualFocusDistance,
   } = useCamera()
 
   // Viewer Transformation Hook
@@ -391,6 +395,31 @@ function App() {
           isFullscreen && (showControls ? "opacity-100" : "opacity-0 pointer-events-none")
         )}
       >
+        {/* Manual Focus Distance Slider Control */}
+        {isCameraActive && isFocusDistanceSupported && isFocusLocked && focusDistanceRange && (
+          <div className="flex items-center space-x-4 px-8 py-3 bg-[#111215]/95 border-b border-[#2e3039] text-[#9ca3af]">
+            <span className="text-xs font-bold shrink-0">초점 미세 조절</span>
+            <input
+              type="range"
+              min={focusDistanceRange.min}
+              max={focusDistanceRange.max}
+              step={focusDistanceRange.step}
+              value={focusDistance}
+              onChange={(e) => setManualFocusDistance(parseFloat(e.target.value))}
+              className="flex-1 accent-indigo-500 bg-[#22242b] h-1.5 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-xs font-mono w-10 text-right shrink-0">{focusDistance}</span>
+            <button
+              onClick={() => {
+                setManualFocusDistance((focusDistanceRange.min + focusDistanceRange.max) / 2)
+              }}
+              className="text-[10px] px-2 py-1 rounded bg-[#22242b] hover:bg-[#2d303b] text-gray-300 transition cursor-pointer"
+            >
+              기본값
+            </button>
+          </div>
+        )}
+
         <Toolbar
           isCameraActive={isCameraActive}
           onToggleCameraActive={handleToggleCameraActive}

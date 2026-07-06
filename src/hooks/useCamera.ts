@@ -20,6 +20,10 @@ export interface UseCameraResult {
   isAutoFocusSupported: boolean
   isFocusLocked: boolean
   toggleFocusLock: () => Promise<boolean>
+  focusDistance: number
+  focusDistanceRange: { min: number; max: number; step: number } | null
+  isFocusDistanceSupported: boolean
+  setManualFocusDistance: (value: number) => Promise<boolean>
 }
 
 export function useCamera(): UseCameraResult {
@@ -37,6 +41,9 @@ export function useCamera(): UseCameraResult {
   const [error, setError] = useState<string | null>(null)
   const [isAutoFocusSupported, setIsAutoFocusSupported] = useState<boolean>(false)
   const [isFocusLocked, setIsFocusLocked] = useState<boolean>(false)
+  const [focusDistance, setFocusDistance] = useState<number>(0)
+  const [focusDistanceRange, setFocusDistanceRange] = useState<{ min: number; max: number; step: number } | null>(null)
+  const [isFocusDistanceSupported, setIsFocusDistanceSupported] = useState<boolean>(false)
 
   // Track active stream ref to prevent closure conflicts
   const activeStreamRef = useRef<MediaStream | null>(null)
@@ -181,9 +188,12 @@ export function useCamera(): UseCameraResult {
   // Reset focus lock state when stream changes
   useEffect(() => {
     setIsFocusLocked(false)
+    setIsFocusDistanceSupported(false)
+    setFocusDistanceRange(null)
+    setFocusDistance(0)
   }, [stream])
 
-  // Detect auto focus support (both manual and continuous needed for lock)
+  // Detect auto focus and focus distance support
   useEffect(() => {
     if (stream) {
       const videoTrack = stream.getVideoTracks()[0]
@@ -195,15 +205,45 @@ export function useCamera(): UseCameraResult {
                capabilities.focusMode.includes('continuous') && 
                capabilities.focusMode.includes('manual'))
           )
+          
+          const isDistSupported = !!(capabilities.focusDistance)
+          setIsFocusDistanceSupported(isDistSupported)
+          if (isDistSupported) {
+            setFocusDistanceRange({
+              min: capabilities.focusDistance.min,
+              max: capabilities.focusDistance.max,
+              step: capabilities.focusDistance.step || 1
+            })
+            
+            // Sync current setting
+            const settings = (typeof videoTrack.getSettings === 'function' ? videoTrack.getSettings() : {}) as any
+            if (typeof settings.focusDistance === 'number') {
+              setFocusDistance(settings.focusDistance)
+            } else {
+              setFocusDistance((capabilities.focusDistance.min + capabilities.focusDistance.max) / 2)
+            }
+          } else {
+            setFocusDistanceRange(null)
+            setFocusDistance(0)
+          }
         } catch (e) {
           console.error('Error reading video capabilities:', e)
           setIsAutoFocusSupported(false)
+          setIsFocusDistanceSupported(false)
+          setFocusDistanceRange(null)
+          setFocusDistance(0)
         }
       } else {
         setIsAutoFocusSupported(false)
+        setIsFocusDistanceSupported(false)
+        setFocusDistanceRange(null)
+        setFocusDistance(0)
       }
     } else {
       setIsAutoFocusSupported(false)
+      setIsFocusDistanceSupported(false)
+      setFocusDistanceRange(null)
+      setFocusDistance(0)
     }
   }, [stream])
 
@@ -234,6 +274,23 @@ export function useCamera(): UseCameraResult {
     }
   }, [stream, isFocusLocked])
 
+  const setManualFocusDistance = useCallback(async (value: number) => {
+    if (!stream) return false
+    const videoTrack = stream.getVideoTracks()[0]
+    if (!videoTrack) return false
+
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ focusMode: 'manual', focusDistance: value } as any]
+      })
+      setFocusDistance(value)
+      return true
+    } catch (err) {
+      console.error('Failed to set manual focus distance:', err)
+      return false
+    }
+  }, [stream])
+
   return {
     devices,
     selectedDeviceId,
@@ -252,5 +309,9 @@ export function useCamera(): UseCameraResult {
     isAutoFocusSupported,
     isFocusLocked,
     toggleFocusLock,
+    focusDistance,
+    focusDistanceRange,
+    isFocusDistanceSupported,
+    setManualFocusDistance,
   }
 }

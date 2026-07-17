@@ -1,11 +1,15 @@
 import React from 'react'
 import { CameraSelector } from './CameraSelector'
+import { MicrophoneSelector } from './MicrophoneSelector'
 import { Maximize, RotateCw, Shield, RefreshCw, Video } from 'lucide-react'
 
 interface StatusBarProps {
   devices: MediaDeviceInfo[]
   selectedDeviceId: string
   onSelectDevice: (deviceId: string) => void
+  audioDevices: MediaDeviceInfo[]
+  selectedAudioDeviceId: string
+  onSelectAudioDevice: (deviceId: string) => void
   zoom: number
   rotation: number
   isFlipped: boolean
@@ -20,6 +24,9 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   devices,
   selectedDeviceId,
   onSelectDevice,
+  audioDevices,
+  selectedAudioDeviceId,
+  onSelectAudioDevice,
   zoom,
   rotation,
   isFlipped,
@@ -42,6 +49,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           devices={devices}
           selectedDeviceId={selectedDeviceId}
           onSelectDevice={onSelectDevice}
+          disabled={isLoading}
+        />
+        <MicrophoneSelector
+          audioDevices={audioDevices}
+          selectedAudioDeviceId={selectedAudioDeviceId}
+          onSelectAudioDevice={onSelectAudioDevice}
           disabled={isLoading}
         />
         {isLoading && (

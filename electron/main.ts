@@ -183,7 +183,27 @@ ipcMain.handle('save-record', async (event, arrayBuffer: ArrayBuffer, fileName: 
   }
 })
 
+// IPC channel for opening output directory
+ipcMain.handle('open-folder', async (event, type: 'capture' | 'record') => {
+  try {
+    const baseDir = type === 'capture'
+      ? path.join(app.getPath('pictures'), 'WebcamViewer')
+      : path.join(app.getPath('videos'), 'WebcamViewer')
+
+    if (!fs.existsSync(baseDir)) {
+      fs.mkdirSync(baseDir, { recursive: true })
+    }
+
+    await shell.openPath(baseDir)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Failed to open folder:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 // IPC channel for exiting the app
 ipcMain.on('quit-app', () => {
   app.quit()
 })
+

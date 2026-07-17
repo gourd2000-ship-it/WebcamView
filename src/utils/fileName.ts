@@ -19,7 +19,7 @@ export function generateCaptureFileName(): string {
  * Generates a timestamp-based filename for webcam recordings.
  * Format: webcam-record-YYYY-MM-DD-HHMMSS.webm
  */
-export function generateRecordFileName(): string {
+export function generateRecordFileName(ext: string = 'webm'): string {
   const now = new Date()
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -29,5 +29,5 @@ export function generateRecordFileName(): string {
   const minutes = String(now.getMinutes()).padStart(2, '0')
   const seconds = String(now.getSeconds()).padStart(2, '0')
   
-  return `webcam-record-${year}-${month}-${day}-${hours}${minutes}${seconds}.webm`
+  return `webcam-record-${year}-${month}-${day}-${hours}${minutes}${seconds}.${ext}`
 }

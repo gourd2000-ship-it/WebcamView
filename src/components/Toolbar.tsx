@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { IconButton } from './IconButton'
 import {
   Camera,
@@ -18,7 +18,8 @@ import {
   Lock,
   Unlock,
   Video,
-  VideoOff
+  VideoOff,
+  FolderOpen
 } from 'lucide-react'
 
 interface ToolbarProps {
@@ -45,6 +46,7 @@ interface ToolbarProps {
   onToggleFocusLock: () => void
   isRecording: boolean
   onToggleRecord: () => void
+  onOpenFolder: (type: 'capture' | 'record') => void
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -71,7 +73,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onToggleFocusLock,
   isRecording,
   onToggleRecord,
+  onOpenFolder,
 }) => {
+  const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsFolderMenuOpen(false)
+      }
+    }
+    if (isFolderMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isFolderMenuOpen])
+
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c22] border-t border-[#2e3039] select-none shrink-0 z-10 gap-4">
       {/* Left: Camera Power ON/OFF & Focus Lock */}
@@ -165,6 +185,40 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           active={isRecording}
           variant={isRecording ? "danger" : "default"}
         />
+        <div className="relative" ref={menuRef}>
+          <IconButton
+            icon={FolderOpen}
+            label="저장 폴더"
+            onClick={() => setIsFolderMenuOpen(!isFolderMenuOpen)}
+            active={isFolderMenuOpen}
+          />
+          {isFolderMenuOpen && (
+            <div className="absolute bottom-16 right-0 bg-[#1a1c22] border border-[#2e3039] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col min-w-[160px] gap-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenFolder('capture')
+                  setIsFolderMenuOpen(false)
+                }}
+                className="flex items-center space-x-2.5 px-3 py-2 text-xs font-bold text-gray-300 hover:bg-emerald-600/20 hover:text-emerald-400 rounded-lg transition-all cursor-pointer text-left w-full border border-transparent hover:border-emerald-500/30"
+              >
+                <Camera className="w-4 h-4 text-emerald-400" />
+                <span>캡처 폴더 열기</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenFolder('record')
+                  setIsFolderMenuOpen(false)
+                }}
+                className="flex items-center space-x-2.5 px-3 py-2 text-xs font-bold text-gray-300 hover:bg-indigo-600/20 hover:text-indigo-400 rounded-lg transition-all cursor-pointer text-left w-full border border-transparent hover:border-indigo-500/30"
+              >
+                <Video className="w-4 h-4 text-indigo-400" />
+                <span>녹화 폴더 열기</span>
+              </button>
+            </div>
+          )}
+        </div>
         <IconButton
           icon={isFullscreen ? Minimize2 : Maximize2}
           label={isFullscreen ? "전체화면 종료" : "전체화면 (F)"}

@@ -9,6 +9,10 @@ export interface ElectronAPI {
     filePath?: string
     error?: string
   }>
+  openFolder: (type: 'capture' | 'record') => Promise<{
+    success: boolean
+    error?: string
+  }>
   isFullscreen: () => Promise<boolean>
   toggleFullscreen: () => void
   exitFullscreen: () => void

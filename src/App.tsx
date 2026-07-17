@@ -18,6 +18,9 @@ function App() {
     devices,
     selectedDeviceId,
     setSelectedDeviceId,
+    audioDevices,
+    selectedAudioDeviceId,
+    setSelectedAudioDeviceId,
     isCameraActive,
     setIsCameraActive,
     stream,
@@ -183,6 +186,17 @@ function App() {
     }
   }
 
+  const handleOpenFolder = async (type: 'capture' | 'record') => {
+    if (window.electronAPI && window.electronAPI.openFolder) {
+      const result = await window.electronAPI.openFolder(type)
+      if (!result.success) {
+        showToast(`폴더 열기 실패: ${result.error}`, 'error')
+      }
+    } else {
+      showToast('지원되지 않는 환경입니다.', 'error')
+    }
+  }
+
   // Undo / Clear All actions for Annotation
   const handleUndo = () => {
     setPaths((prev) => prev.slice(0, prev.length - 1))
@@ -272,6 +286,9 @@ function App() {
           devices={devices}
           selectedDeviceId={selectedDeviceId}
           onSelectDevice={handleSelectDevice}
+          audioDevices={audioDevices}
+          selectedAudioDeviceId={selectedAudioDeviceId}
+          onSelectAudioDevice={setSelectedAudioDeviceId}
           zoom={zoom}
           rotation={rotation}
           isFlipped={isFlipped}
@@ -482,6 +499,7 @@ function App() {
           }}
           isRecording={isRecording}
           onToggleRecord={handleToggleRecord}
+          onOpenFolder={handleOpenFolder}
         />
       </div>
 

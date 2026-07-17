@@ -6,6 +6,9 @@ export interface UseCameraResult {
   devices: MediaDeviceInfo[]
   selectedDeviceId: string
   setSelectedDeviceId: (id: string) => void
+  audioDevices: MediaDeviceInfo[]
+  selectedAudioDeviceId: string
+  setSelectedAudioDeviceId: (id: string) => void
   isCameraActive: boolean
   setIsCameraActive: (active: boolean) => void
   stream: MediaStream | null
@@ -29,6 +32,8 @@ export interface UseCameraResult {
 export function useCamera(): UseCameraResult {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('')
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>('')
   const [isCameraActive, setIsCameraActive] = useState<boolean>(true)
   const [stream, setStream] = useState<MediaStream | null>(null)
   
@@ -48,11 +53,12 @@ export function useCamera(): UseCameraResult {
   // Track active stream ref to prevent closure conflicts
   const activeStreamRef = useRef<MediaStream | null>(null)
 
-  // Helper to enumerate video devices
+  // Helper to enumerate video and audio devices
   const refreshDevices = useCallback(async () => {
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices()
       const videoDevices = allDevices.filter((d) => d.kind === 'videoinput')
+      const audioDevicesList = allDevices.filter((d) => d.kind === 'audioinput')
       
       const virtualDevice: MediaDeviceInfo = {
         deviceId: 'virtual-camera',
@@ -64,32 +70,39 @@ export function useCamera(): UseCameraResult {
 
       const combinedDevices = [...videoDevices, virtualDevice]
       setDevices(combinedDevices)
+      setAudioDevices(audioDevicesList)
       
       // Auto-select first device if none is selected
       if (combinedDevices.length > 0 && !selectedDeviceId) {
         setSelectedDeviceId(combinedDevices[0].deviceId)
       }
+
+      // Auto-select first audio device if none is selected
+      if (audioDevicesList.length > 0 && !selectedAudioDeviceId) {
+        setSelectedAudioDeviceId(audioDevicesList[0].deviceId)
+      }
     } catch (err) {
       console.error('Failed to enumerate devices:', err)
-      setError('카메라 장치 목록을 불러오는 데 실패했습니다.')
+      setError('카메라 및 마이크 장치 목록을 불러오는 데 실패했습니다.')
     }
-  }, [selectedDeviceId])
+  }, [selectedDeviceId, selectedAudioDeviceId])
 
   // Request permission explicitly
   const requestPermission = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true })
+      // 카메라와 마이크 권한 동시에 요청
+      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       // Stop temp stream tracks immediately
       tempStream.getTracks().forEach((track) => track.stop())
       await refreshDevices()
     } catch (err: any) {
-      console.error('Camera permission request failed:', err)
+      console.error('Camera/Audio permission request failed:', err)
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError('카메라 접근 권한이 거부되었습니다. Windows 설정이나 브라우저 설정에서 웹캠 사용 권한을 확인하세요.')
+        setError('카메라 또는 마이크 접근 권한이 거부되었습니다. 설정에서 사용 권한을 확인해 주세요.')
       } else {
-        setError('카메라 장치를 초기화하지 못했습니다. 장치가 연결되어 있거나 사용 중인지 확인해 주세요.')
+        setError('장치를 초기화하지 못했습니다. 연결 상태나 사용 여부를 확인해 주세요.')
       }
       await refreshDevices()
     } finally {
@@ -102,7 +115,7 @@ export function useCamera(): UseCameraResult {
     refreshDevices()
   }, [refreshDevices])
 
-  // Manage Stream lifecycle based on selectedDeviceId and isCameraActive
+  // Manage Stream lifecycle based on selectedDeviceId, selectedAudioDeviceId and isCameraActive
   useEffect(() => {
     let active = true
 
@@ -135,15 +148,28 @@ export function useCamera(): UseCameraResult {
         if (selectedDeviceId === 'virtual-camera') {
           newStream = createVirtualCameraStream()
         } else {
-          const constraints: MediaStreamConstraints = {
-            video: {
-              deviceId: { exact: selectedDeviceId },
-              // ideal resolution for document reading
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-            },
+          // 비디오 제약조건 정의
+          const videoConstraints = {
+            deviceId: { exact: selectedDeviceId },
+            // ideal resolution for document reading
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
           }
-          newStream = await navigator.mediaDevices.getUserMedia(constraints)
+
+          // 마이크 설정 정의 (선택 안 함이 아닌 경우 디바이스 아이디 지정, 아닐 시 false)
+          const constraints: MediaStreamConstraints = {
+            video: videoConstraints,
+            audio: selectedAudioDeviceId ? { deviceId: { exact: selectedAudioDeviceId } } : false
+          }
+
+          try {
+            newStream = await navigator.mediaDevices.getUserMedia(constraints)
+          } catch (audioErr) {
+            console.warn('Audio capture failed, falling back to video only:', audioErr)
+            newStream = await navigator.mediaDevices.getUserMedia({
+              video: videoConstraints
+            })
+          }
         }
         
         if (active) {
@@ -156,7 +182,7 @@ export function useCamera(): UseCameraResult {
         console.error('Failed to get camera stream:', err)
         if (active) {
           if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            setError('카메라 권한이 거부되었습니다. 웹캠 권한을 허용해 주세요.')
+            setError('카메라 및 마이크 권한이 거부되었습니다. 권한을 허용해 주세요.')
           } else {
             setError('카메라가 다른 앱에서 점유되어 있거나 사용할 수 없는 상태입니다.')
           }
@@ -174,7 +200,7 @@ export function useCamera(): UseCameraResult {
     return () => {
       active = false
     }
-  }, [selectedDeviceId, isCameraActive])
+  }, [selectedDeviceId, selectedAudioDeviceId, isCameraActive])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -295,6 +321,9 @@ export function useCamera(): UseCameraResult {
     devices,
     selectedDeviceId,
     setSelectedDeviceId,
+    audioDevices,
+    selectedAudioDeviceId,
+    setSelectedAudioDeviceId,
     isCameraActive,
     setIsCameraActive,
     stream,

@@ -8,6 +8,7 @@ import { useCamera } from './hooks/useCamera'
 import { useViewerTransform } from './hooks/useViewerTransform'
 import { useFullscreen } from './hooks/useFullscreen'
 import { useCapture } from './hooks/useCapture'
+import { useRecord } from './hooks/useRecord'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { cn } from './utils/cn'
 import { CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react'
@@ -64,6 +65,9 @@ function App() {
   // Capture Hook
   const { isCapturing, capture } = useCapture()
 
+  // Record Hook
+  const { isRecording, recordingTime, startRecording, stopRecording } = useRecord()
+
   // Custom Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
@@ -96,6 +100,26 @@ function App() {
   // Handlers
   const handleSelectDevice = (id: string) => {
     setSelectedDeviceId(id)
+  }
+
+  const handleToggleRecord = async () => {
+    if (!isRecording) {
+      if (!isCameraActive || !stream) {
+        showToast('카메라가 활성화되어 있지 않아 녹화할 수 없습니다.', 'error')
+        return
+      }
+      startRecording(stream)
+      showToast('비디오 녹화를 시작합니다.', 'success')
+    } else {
+      showToast('녹화를 중지하고 파일을 저장하는 중...', 'success')
+      const result = await stopRecording()
+      if (result && result.success) {
+        const fileName = result.filePath?.split(/\/|\\/).pop() || 'video.webm'
+        showToast(`성공적으로 녹화 저장되었습니다: ${fileName}`, 'success')
+      } else if (result) {
+        showToast(`녹화 저장 실패: ${result.error}`, 'error')
+      }
+    }
   }
 
   const handleToggleCameraActive = () => {
@@ -190,6 +214,7 @@ function App() {
     onCapture: handleCapture,
     onExitFullscreen: exitFullscreen,
     isCameraActive,
+    onToggleRecord: handleToggleRecord,
     onSelectTool: setActiveTool,
     onUndo: handleUndo,
     onClearAll: handleClearAll,
@@ -253,6 +278,8 @@ function App() {
           isFrozen={isFrozen}
           isFullscreen={isFullscreen}
           isLoading={isLoading}
+          isRecording={isRecording}
+          recordingTime={recordingTime}
         />
       </div>
 
@@ -453,6 +480,8 @@ function App() {
               showToast('초점 상태 변경에 실패했습니다.', 'error')
             }
           }}
+          isRecording={isRecording}
+          onToggleRecord={handleToggleRecord}
         />
       </div>
 

@@ -4,6 +4,11 @@ export interface ElectronAPI {
     filePath?: string
     error?: string
   }>
+  saveRecord: (arrayBuffer: ArrayBuffer, fileName: string) => Promise<{
+    success: boolean
+    filePath?: string
+    error?: string
+  }>
   isFullscreen: () => Promise<boolean>
   toggleFullscreen: () => void
   exitFullscreen: () => void

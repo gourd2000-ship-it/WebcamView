@@ -1,6 +1,6 @@
 import React from 'react'
 import { CameraSelector } from './CameraSelector'
-import { Maximize, RotateCw, Shield, RefreshCw } from 'lucide-react'
+import { Maximize, RotateCw, Shield, RefreshCw, Video } from 'lucide-react'
 
 interface StatusBarProps {
   devices: MediaDeviceInfo[]
@@ -12,6 +12,8 @@ interface StatusBarProps {
   isFrozen: boolean
   isFullscreen: boolean
   isLoading: boolean
+  isRecording: boolean
+  recordingTime: number
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -24,7 +26,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isFrozen,
   isFullscreen,
   isLoading,
+  isRecording,
+  recordingTime,
 }) => {
+  const formatTime = (seconds: number): string => {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0')
+    const s = String(seconds % 60).padStart(2, '0')
+    return `${m}:${s}`
+  }
   return (
     <header className="flex items-center justify-between px-6 py-3.5 bg-[#1a1c22] border-b border-[#2e3039] select-none shrink-0 z-10">
       {/* Device Selection & Status */}
@@ -65,6 +74,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         {isFrozen && (
           <span className="px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
             화면 정지됨
+          </span>
+        )}
+
+        {/* Record Status */}
+        {isRecording && (
+          <span className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
+            <Video className="w-3.5 h-3.5 text-rose-500" />
+            <span>녹화 중 ({formatTime(recordingTime)})</span>
           </span>
         )}
       </div>

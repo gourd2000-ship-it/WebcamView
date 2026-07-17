@@ -11,6 +11,7 @@ interface KeyboardShortcutsProps {
   onCapture: () => void
   onExitFullscreen: () => void
   isCameraActive: boolean
+  onToggleRecord?: () => void
   
   // Annotation drawing board shortcuts
   onSelectTool?: (tool: 'select' | 'pen' | 'highlighter' | 'eraser' | 'line' | 'rect' | 'circle' | 'arrow') => void
@@ -29,6 +30,7 @@ export function useKeyboardShortcuts({
   onCapture,
   onExitFullscreen,
   isCameraActive,
+  onToggleRecord,
   onSelectTool,
   onUndo,
   onClearAll,
@@ -84,6 +86,10 @@ export function useKeyboardShortcuts({
       if (!isCameraActive) return
 
       switch (key) {
+        case 'w': // Record Video Toggle (W)
+          event.preventDefault()
+          if (onToggleRecord) onToggleRecord()
+          break
         case ' ': // Space
         case 'spacebar':
           event.preventDefault()
@@ -180,6 +186,7 @@ export function useKeyboardShortcuts({
     onCapture,
     onExitFullscreen,
     isCameraActive,
+    onToggleRecord,
     onSelectTool,
     onUndo,
     onClearAll,

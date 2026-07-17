@@ -154,6 +154,35 @@ ipcMain.on('exit-fullscreen', () => {
   }
 })
 
+// IPC channel for saving recorded video (webm/mp4)
+ipcMain.handle('save-record', async (event, arrayBuffer: ArrayBuffer, fileName: string) => {
+  try {
+    // 2순위 보안 조치: DoS 방지를 위한 최대 업로드 파일 크기 제한 (100MB)
+    const MAX_RECORD_SIZE = 100 * 1024 * 1024
+    if (arrayBuffer.byteLength > MAX_RECORD_SIZE) {
+      return { success: false, error: '허용된 비디오 용량(100MB)을 초과했습니다.' }
+    }
+
+    // 경로 탐색(Path Traversal) 공격을 방지하기 위해 파일의 순수 이름만 추출
+    const safeFileName = path.basename(fileName)
+    const videosPath = app.getPath('videos')
+    const saveDir = path.join(videosPath, 'WebcamViewer')
+
+    if (!fs.existsSync(saveDir)) {
+      fs.mkdirSync(saveDir, { recursive: true })
+    }
+
+    const filePath = path.join(saveDir, safeFileName)
+    const buffer = Buffer.from(arrayBuffer)
+    
+    await fs.promises.writeFile(filePath, buffer)
+    return { success: true, filePath }
+  } catch (error: any) {
+    console.error('Failed to save record:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 // IPC channel for exiting the app
 ipcMain.on('quit-app', () => {
   app.quit()

@@ -27,3 +27,7 @@ dist-electron
 
 # Certificates
 *.pfx
+
+# Temp/Tool directories
+data/
+.playwright-mcp/

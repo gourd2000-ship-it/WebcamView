@@ -16,7 +16,9 @@ import {
   SlidersHorizontal,
   LogOut,
   Lock,
-  Unlock
+  Unlock,
+  Video,
+  VideoOff
 } from 'lucide-react'
 
 interface ToolbarProps {
@@ -41,6 +43,8 @@ interface ToolbarProps {
   isAutoFocusSupported: boolean
   isFocusLocked: boolean
   onToggleFocusLock: () => void
+  isRecording: boolean
+  onToggleRecord: () => void
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -65,6 +69,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isAutoFocusSupported,
   isFocusLocked,
   onToggleFocusLock,
+  isRecording,
+  onToggleRecord,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-[#1a1c22] border-t border-[#2e3039] select-none shrink-0 z-10 gap-4">
@@ -150,6 +156,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           disabled={!isCameraActive || isCapturing}
           active={isCapturing}
           variant="success"
+        />
+        <IconButton
+          icon={isRecording ? VideoOff : Video}
+          label={isRecording ? "녹화 중지 (W)" : "비디오 녹화 (W)"}
+          onClick={onToggleRecord}
+          disabled={!isCameraActive}
+          active={isRecording}
+          variant={isRecording ? "danger" : "default"}
         />
         <IconButton
           icon={isFullscreen ? Minimize2 : Maximize2}

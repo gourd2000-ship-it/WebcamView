@@ -3,6 +3,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('electronAPI', {
   saveCapture: (arrayBuffer: ArrayBuffer, fileName: string) => 
     ipcRenderer.invoke('save-capture', arrayBuffer, fileName),
+  saveRecord: (arrayBuffer: ArrayBuffer, fileName: string) => 
+    ipcRenderer.invoke('save-record', arrayBuffer, fileName),
   isFullscreen: () => ipcRenderer.invoke('is-fullscreen'),
   toggleFullscreen: () => ipcRenderer.send('toggle-fullscreen'),
   exitFullscreen: () => ipcRenderer.send('exit-fullscreen'),

@@ -49,8 +49,13 @@ export function useKeyboardShortcuts({
         return
       }
 
-      const key = event.key.toLowerCase()
+      let key = event.key.toLowerCase()
       const code = event.code
+
+      // 한글 입력기(IME) 상태에서 알파벳 단축키가 작동하도록 event.code를 기반으로 key 매핑 우회
+      if (code.startsWith('Key')) {
+        key = code.replace('Key', '').toLowerCase()
+      }
 
       // Esc (Exit Fullscreen)
       if (key === 'escape') {

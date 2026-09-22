@@ -111,7 +111,7 @@ function App() {
         showToast('카메라가 활성화되어 있지 않아 녹화할 수 없습니다.', 'error')
         return
       }
-      startRecording(stream)
+      startRecording(stream, viewerRef.current as HTMLVideoElement, rotation, isFlipped)
       showToast('비디오 녹화를 시작합니다.', 'success')
     } else {
       showToast('녹화를 중지하고 파일을 저장하는 중...', 'success')

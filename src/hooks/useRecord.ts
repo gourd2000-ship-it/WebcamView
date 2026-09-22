@@ -4,7 +4,12 @@ import { generateRecordFileName } from '../utils/fileName'
 export interface UseRecordResult {
   isRecording: boolean
   recordingTime: number // 초 단위 경과 시간
-  startRecording: (stream: MediaStream | null) => void
+  startRecording: (
+    stream: MediaStream | null,
+    videoElement: HTMLVideoElement | null,
+    rotation: number,
+    isFlipped: boolean
+  ) => void
   stopRecording: () => Promise<{ success: boolean; filePath?: string; error?: string } | null>
 }
 
@@ -16,11 +21,18 @@ export function useRecord(): UseRecordResult {
   const chunksRef = useRef<Blob[]>([])
   const timerIdRef = useRef<any>(null)
   const actualMimeTypeRef = useRef<string>('video/webm')
+  const animationFrameIdRef = useRef<number | null>(null)
+  const canvasStreamRef = useRef<MediaStream | null>(null)
   
   // startRecording
-  const startRecording = useCallback((stream: MediaStream | null) => {
-    if (!stream) {
-      console.warn('Cannot start recording: stream is null')
+  const startRecording = useCallback((
+    stream: MediaStream | null,
+    videoElement: HTMLVideoElement | null,
+    rotation: number,
+    isFlipped: boolean
+  ) => {
+    if (!stream || !videoElement) {
+      console.warn('Cannot start recording: stream or videoElement is null')
       return
     }
 
@@ -28,6 +40,58 @@ export function useRecord(): UseRecordResult {
     setRecordingTime(0)
 
     try {
+      const videoWidth = videoElement.videoWidth || 1920
+      const videoHeight = videoElement.videoHeight || 1080
+
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        throw new Error('Failed to get canvas 2D context')
+      }
+
+      // 회전 각도에 따른 크기 설정
+      const isRotated90or270 = rotation === 90 || rotation === 270
+      canvas.width = isRotated90or270 ? videoHeight : videoWidth
+      canvas.height = isRotated90or270 ? videoWidth : videoHeight
+
+      // 프레임 렌더링 루프
+      const drawFrame = () => {
+        if (!ctx || !videoElement) return
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.save()
+
+        // 원점을 캔버스 중심으로 이동
+        ctx.translate(canvas.width / 2, canvas.height / 2)
+
+        // 대칭 적용
+        if (isFlipped) {
+          ctx.scale(-1, 1)
+        }
+
+        // 회전 적용
+        ctx.rotate((rotation * Math.PI) / 180)
+
+        // 프레임 그리기
+        ctx.drawImage(videoElement, -videoWidth / 2, -videoHeight / 2, videoWidth, videoHeight)
+        ctx.restore()
+
+        animationFrameIdRef.current = requestAnimationFrame(drawFrame)
+      }
+
+      // 루프 기동
+      drawFrame()
+
+      // 캔버스 스트림 생성 (30fps)
+      const canvasStream = canvas.captureStream(30)
+      canvasStreamRef.current = canvasStream
+
+      // 오디오 트랙 병합
+      const audioTracks = stream.getAudioTracks()
+      if (audioTracks.length > 0) {
+        canvasStream.addTrack(audioTracks[0].clone())
+      }
+
       // 윈도우 미디어 플레이어 및 타 플레이어 호환성이 높은 코덱 우선순위 리스트
       const candidates = [
         'video/mp4;codecs=h264,aac',
@@ -52,7 +116,7 @@ export function useRecord(): UseRecordResult {
       console.log('Using Recorder MIME type:', selectedType)
       actualMimeTypeRef.current = selectedType
 
-      const recorder = new MediaRecorder(stream, options)
+      const recorder = new MediaRecorder(canvasStream, options)
       
       recorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
@@ -90,6 +154,18 @@ export function useRecord(): UseRecordResult {
         if (timerIdRef.current) {
           clearInterval(timerIdRef.current)
           timerIdRef.current = null
+        }
+
+        // 프레임 루프 중단
+        if (animationFrameIdRef.current) {
+          cancelAnimationFrame(animationFrameIdRef.current)
+          animationFrameIdRef.current = null
+        }
+
+        // 캔버스 스트림 트랙 중지
+        if (canvasStreamRef.current) {
+          canvasStreamRef.current.getTracks().forEach((track) => track.stop())
+          canvasStreamRef.current = null
         }
 
         try {
@@ -142,6 +218,12 @@ export function useRecord(): UseRecordResult {
     return () => {
       if (timerIdRef.current) {
         clearInterval(timerIdRef.current)
+      }
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current)
+      }
+      if (canvasStreamRef.current) {
+        canvasStreamRef.current.getTracks().forEach((track) => track.stop())
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop()

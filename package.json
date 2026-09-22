@@ -12,7 +12,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "package": "tsc -b && vite build && electron-builder",
-    "package:dir": "tsc -b && vite build && electron-builder --dir"
+    "package:dir": "tsc -b && vite build && electron-builder --dir",
+    "package:internal": "powershell -ExecutionPolicy Bypass -File scripts\\build-internal-app.ps1"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -45,17 +46,18 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable",
-        "zip"
-      ]
+        "appx"
+      ],
+      "signtoolOptions": {
+        "sign": "./scripts/sign-internal-windows.cjs"
+      }
     },
-    "nsis": {
-      "oneClick": true,
-      "allowToChangeInstallationDirectory": false,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+    "appx": {
+      "publisher": "CN=WebcamViewer Internal",
+      "publisherDisplayName": "WebcamViewer Internal",
+      "applicationId": "WebcamViewer"
     },
+    "forceCodeSigning": true,
     "files": [
       "dist/**/*",
       "dist-electron/**/*"

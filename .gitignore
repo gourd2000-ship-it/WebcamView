@@ -27,6 +27,7 @@ dist-electron
 
 # Certificates
 *.pfx
+.internal-release/
 
 # Temp/Tool directories
 data/
